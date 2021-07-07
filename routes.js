@@ -1,7 +1,7 @@
 const routes = require("next-routes")();
 routes
-  .add("/campaigns/new", "/campaigns/new")
-  .add("/campaigns/:address", "/campaigns/show")
-  .add("/campaigns/:address/requests", "/campaigns/requests/index")
-  .add("/campaigns/:address/requests/new", "/campaigns/requests/new");
+  .add("/coins/new", "/coins/new")
+  .add("/coins/:address", "/coins/show")
+  .add("/coins/:address/requests", "/coins/requests/index")
+  .add("/coins/:address/requests/new", "/coins/requests/new");
 module.exports = routes;

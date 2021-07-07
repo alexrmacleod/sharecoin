@@ -1,26 +1,15 @@
 import React, { Component } from "react";
-import { Context } from "./Context";
 import { Input, Message, Form, Button, Menu } from "semantic-ui-react";
 import Coin from "../ethereum/coin";
-import web3, { setWeb3, connected } from "../ethereum/web3";
+import web3 from "../ethereum/web3";
 import { Router } from "../routes";
-import helper from "../scripts/helper";
 
-class ContributeForm extends Component {
+class BurnForm extends Component {
   state = {
     value: "",
     errorMessage: "",
     loading: false,
-  };
-  static contextType = Context;
-
-  onClick = async (event) => {
-    event.preventDefault();
-    const accounts = await web3.eth.getAccounts();
-    const balance = await web3.eth.getBalance(accounts[0]);
-    this.setState({
-      value: balance,
-    });
+    loadingMessage: false,
   };
 
   onSubmit = async (event) => {
@@ -30,9 +19,8 @@ class ContributeForm extends Component {
     try {
       const accounts = await web3.eth.getAccounts();
       await coin.methods
-        .disburse(web3.utils.toWei(this.state.value, "ether"))
+        .burn(web3.utils.toWei(this.state.value, "ether"))
         .send({
-          gas: helper.gas,
           from: accounts[0],
         });
       Router.replaceRoute(`/coins/${this.props.address}`);
@@ -42,35 +30,47 @@ class ContributeForm extends Component {
     this.setState({ loading: false, value: "" });
   };
 
-  render() {
-    const { account, connected } = this.context;
+  onChange = async (event) => {
+    const coin = Coin(this.props.address);
+    this.setState({ value: event.target.value });
+    try {
+      if (event.target.value <= 0) {
+        return;
+      }
+      var price;
+      await coin.methods
+        .getContinuousBurnRefund(web3.utils.toWei(event.target.value, "ether"))
+        .call()
+        .then((value) => (price = value));
+      this.setState({
+        message: `${web3.utils.fromWei(price, "ether")} ETH`,
+      });
+    } catch (error) {}
+  };
 
+  render() {
     return (
       <Form onSubmit={this.onSubmit} error={!!this.state.errorMessage}>
+        <Message hidden={!this.state.value} info>
+          {this.state.message}
+        </Message>
         <Form.Field>
           <Input
             value={this.state.value}
-            onChange={(event) => this.setState({ value: event.target.value })}
-            label="ETH"
+            onChange={this.onChange}
+            label={this.props.label}
             labelPosition="right"
           />
         </Form.Field>
         <Message error header="Oops!" content={this.state.errorMessage} />
         <Button
-          type="button"
-          content="Max"
-          onClick={this.onClick}
-          disabled={!connected}
-        />
-        <Button
-          primary
-          content="Contribute"
+          color={this.props.color}
           loading={this.state.loading}
-          disabled={!connected}
+          content={this.props.activeItem}
         />
       </Form>
     );
   }
 }
 
-export default ContributeForm;
+export default BurnForm;

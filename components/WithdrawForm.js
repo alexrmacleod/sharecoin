@@ -6,7 +6,7 @@ import web3, { setWeb3, connected } from "../ethereum/web3";
 import { Router } from "../routes";
 import helper from "../scripts/helper";
 
-class ContributeForm extends Component {
+class WithdrawForm extends Component {
   state = {
     value: "",
     errorMessage: "",
@@ -16,10 +16,8 @@ class ContributeForm extends Component {
 
   onClick = async (event) => {
     event.preventDefault();
-    const accounts = await web3.eth.getAccounts();
-    const balance = await web3.eth.getBalance(accounts[0]);
     this.setState({
-      value: balance,
+      value: this.props.beneficiaryRewards,
     });
   };
 
@@ -30,7 +28,7 @@ class ContributeForm extends Component {
     try {
       const accounts = await web3.eth.getAccounts();
       await coin.methods
-        .disburse(web3.utils.toWei(this.state.value, "ether"))
+        .withdraw(web3.utils.toWei(this.state.value, "ether"))
         .send({
           gas: helper.gas,
           from: accounts[0],
@@ -44,6 +42,14 @@ class ContributeForm extends Component {
 
   render() {
     const { account, connected } = this.context;
+
+    console.log("withdrawform.js connected", connected);
+    console.log("withdrawform.js this.state.account", account);
+    console.log(
+      "withdrawform.js this.props.beneficiary",
+      this.props.beneficiary
+    );
+    console.log(account !== this.props.beneficiary);
 
     return (
       <Form onSubmit={this.onSubmit} error={!!this.state.errorMessage}>
@@ -64,13 +70,13 @@ class ContributeForm extends Component {
         />
         <Button
           primary
-          content="Contribute"
+          content="Withdraw"
           loading={this.state.loading}
-          disabled={!connected}
+          disabled={!connected || account !== this.props.beneficiary}
         />
       </Form>
     );
   }
 }
 
-export default ContributeForm;
+export default WithdrawForm;

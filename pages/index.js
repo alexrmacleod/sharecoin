@@ -1,22 +1,24 @@
 import React, { Component } from "react";
-import { Card, Button } from "semantic-ui-react";
-import Layout from "../components/Layout.js";
+import { Context } from "../components/Context";
+import { Card, Button, Grid } from "semantic-ui-react";
+import Layout from "../components/Layout";
 import factory from "../ethereum/factory";
 import { Link } from "../routes";
 
-class CampaignIndex extends Component {
+class Index extends Component {
+  static contextType = Context;
   static async getInitialProps() {
-    const campaigns = await factory.methods.getDeployedCampaigns().call();
-    return { campaigns };
+    const coins = await factory.methods.getDeployedCoins().call();
+    return { coins };
   }
 
-  renderCampaigns() {
-    const items = this.props.campaigns.map((address) => {
+  renderCoins() {
+    const items = this.props.coins.map((address) => {
       return {
         header: address,
         description: (
-          <Link route={`/campaigns/${address}`}>
-            <a>View Project</a>
+          <Link route={`/coins/${address}`}>
+            <a>View Coin</a>
           </Link>
         ),
         fluid: true,
@@ -26,25 +28,33 @@ class CampaignIndex extends Component {
   }
 
   render() {
+    const { connected } = this.context;
     return (
       <Layout>
         <div>
-          <h1>Project Feed</h1>
-          <Link route="/campaigns/new">
-            <a>
-              <Button
-                floated="right"
-                content="Create Project"
-                icon="add"
-                primary
-              />
-            </a>
-          </Link>
-          {this.renderCampaigns()}
+          <h3>Coins</h3>
+          <Grid>
+            <Grid.Row>
+              <Grid.Column width={12}>{this.renderCoins()}</Grid.Column>
+              <Grid.Column width={4}>
+                <Link route="/coins/new">
+                  <a>
+                    <Button
+                      disabled={!connected}
+                      floated="right"
+                      content="Create Coin"
+                      icon="add"
+                      primary
+                    />
+                  </a>
+                </Link>
+              </Grid.Column>
+            </Grid.Row>
+          </Grid>
         </div>
       </Layout>
     );
   }
 }
 
-export default CampaignIndex;
+export default Index;
