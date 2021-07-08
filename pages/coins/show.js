@@ -190,6 +190,11 @@ class CoinShow extends Component {
         <h3>{this.props.address}</h3>
         <Grid>
           <Grid.Row>
+            <Image
+              src={`https://ipfs.io/ipfs/${this.props.ipfsHash}`}
+              size="medium"
+              rounded
+            />
             <Grid.Column width={9}>{this.renderCards()}</Grid.Column>
             <Grid.Column width={7}>
               <Card

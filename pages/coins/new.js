@@ -1,5 +1,15 @@
 import React, { Component } from "react";
-import { Image, Button, Form, Input, Message, Label } from "semantic-ui-react";
+import {
+  Image,
+  Button,
+  Form,
+  Input,
+  Message,
+  Grid,
+  Divider,
+  Header,
+  Icon,
+} from "semantic-ui-react";
 import Layout from "../../components/Layout";
 import factory from "../../ethereum/factory";
 import web3 from "../../ethereum/web3";
@@ -8,6 +18,7 @@ import helper from "../../scripts/helper";
 import ipfs from "../../ethereum/ipfs";
 import "react-image-crop/dist/ReactCrop.css";
 import ReactCrop from "react-image-crop";
+import gravatar from "gravatar";
 
 class CoinNew extends Component {
   state = {
@@ -19,16 +30,11 @@ class CoinNew extends Component {
     value: "",
     errorMessage: "",
     loading: false,
-    // file: null,
+    file: false,
     buffer: null,
-    ipfsHash: "QmaqtStzh9vaSeZvDNuMqpW3rPPCQDse9cxzXVUTwM4a6A",
-    crop: {
-      unit: "px",
-      width: 50,
-      height: 50,
-      x: 25,
-      y: 25,
-    },
+    avatar: null,
+    croppedImageUrl: null,
+    ipfsHash: "",
   };
 
   fileInputRef = React.createRef();
@@ -37,14 +43,23 @@ class CoinNew extends Component {
     event.preventDefault();
     this.setState({ loading: true, errorMessage: "" });
     try {
-      console.log("here");
+      // after crop send to buffer for ipfs
+      const reader = new window.FileReader();
+      reader.readAsArrayBuffer(
+        this.state.file
+          ? new File(this.state.croppedImageUrl, "avatar.jpeg")
+          : new File(this.state.avatar, "avatar.jpeg")
+      );
+      reader.onload = () => {
+        this.setState({ buffer: Buffer(reader.result) });
+      };
+
+      // ipfs
       const result = await ipfs.add(this.state.buffer);
       this.setState({ ipfsHash: result.path });
-      console.log(result.path);
-      // console.log(ipfs.cid);
 
+      // create coin
       const accounts = await web3.eth.getAccounts();
-
       await factory.methods
         .createCoin(
           this.state.name,
@@ -68,188 +83,262 @@ class CoinNew extends Component {
     this.setState({ loading: false });
   };
 
+  // ipfs
   fileChange = (event) => {
     event.preventDefault();
-    // onImageLoaded(event.target.files[0]);
-    // this.setState({ file: event.target.files[0] }, () => {
-    //   console.log("file chosen --->", this.state.file);
-    // });
-    // const file = event.target.files[0];
-    const reader = new window.FileReader();
-    reader.readAsArrayBuffer(event.target.files[0]);
-    reader.onload = () => {
-      this.setState({ buffer: Buffer(reader.result) });
-      console.log("buffer --->", this.state.buffer);
-    };
-  };
-
-  onChange = (crop) => {
-    this.setState({ crop });
+    // get file and feed to crop
+    this.setState({ file: URL.createObjectURL(event.target.files[0]) });
   };
 
   onImageLoaded = (image) => {
-    console.log("on image load");
-    this.setState({
-      crop: {
-        // unit: "px",
-        width: 100,
-        height: 100,
-        x: image.width / 2 - 50,
-        y: image.height / 2 - 50,
-      },
-    });
-
-    return false; // Return false when setting crop state in here.
+    this.imageRef = image;
+    const crop = {
+      unit: "px",
+      width: 400,
+      height: 400,
+      x: image.width / 2 - 200,
+      y: image.height / 2 - 200,
+    };
+    this.setState({ crop: crop });
+    this.makeClientCrop(crop);
+    return false; // return false when setting crop state in here.
   };
 
-  onCropChange = (crop, percentCrop) => this.setState({ crop: percentCrop });
+  onCropComplete = (crop) => {
+    this.makeClientCrop(crop);
+  };
 
-  // CropDemo = (src) => {
-  //   // const [crop, setCrop] = useState({ aspect: 16 / 9 });
-  //   const { crop, setCrop } = this.state.aspect;
-  //   console.log(this.state.aspect);
+  onCropChange = (crop, percentCrop) => {
+    // could also use percentCrop
+    // this.setState({ crop: percentCrop });
+    this.setState({ crop });
+  };
 
-  //   return (
-  //     <ReactCrop
-  //       src={src}
-  //       crop={crop}
-  //       onChange={(newCrop) => this.setState({ crop: newCrop })}
-  //     />
-  //   );
-  // };
+  async makeClientCrop(crop) {
+    if (this.imageRef && crop.width && crop.height) {
+      const croppedImageUrl = await this.getCroppedImg(
+        this.imageRef,
+        crop,
+        "newFile.jpeg"
+      );
+      this.setState({ croppedImageUrl });
+    }
+  }
 
-  // fileUpload = (file) => {
+  getCroppedImg(image, crop, fileName) {
+    const canvas = document.createElement("canvas");
+    const scaleX = image.naturalWidth / image.width;
+    const scaleY = image.naturalHeight / image.height;
+    canvas.width = crop.width;
+    canvas.height = crop.height;
+    const ctx = canvas.getContext("2d");
 
-  //   const url = "/some/path/to/post";
-  //   const formData = new FormData();
-  //   formData.append("file", file);
-  //   const config = {
-  //     headers: {
-  //       "Content-type": "multipart/form-data",
-  //     },
-  //   };
-  //   return put(url, formData, config);
-  // };
+    ctx.drawImage(
+      image,
+      crop.x * scaleX,
+      crop.y * scaleY,
+      crop.width * scaleX,
+      crop.height * scaleY,
+      0,
+      0,
+      crop.width,
+      crop.height
+    );
+
+    return new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          //reject(new Error('Canvas is empty'));
+          console.error("Canvas is empty");
+          return;
+        }
+        blob.name = fileName;
+        window.URL.revokeObjectURL(this.fileUrl);
+        this.fileUrl = window.URL.createObjectURL(blob);
+        resolve(this.fileUrl);
+      }, "image/jpeg");
+    });
+  }
+
+  componentDidMount() {
+    this.setState({
+      avatar: gravatar.url(
+        this.state.name,
+        { s: "400", r: "x", d: "retro" },
+        true
+      ),
+    });
+    this.fileChange = this.fileChange.bind(this);
+  }
 
   render() {
+    const styles = {
+      textAlign: "center",
+      marginTop: "14px",
+      // width: "300px",
+      // height: "300px",
+      borderRadius: "5px",
+    };
+
     return (
       <Layout>
         <h3>Create a Coin</h3>
         <Form onSubmit={this.onSubmit} error={!!this.state.errorMessage}>
-          <Form.Group widths="equal">
-            <Form.Field
-              control={Input}
-              label="Name"
-              placeholder="Basic Continuous Token"
-              value={this.state.name}
-              onChange={(event) => this.setState({ name: event.target.value })}
-            />
-            <Form.Field
-              control={Input}
-              label="Symbol"
-              placeholder="BCT"
-              value={this.state.symbol}
-              onChange={(event) =>
-                this.setState({ symbol: event.target.value })
-              }
-            />
-            {/* <Form.Field
-              control={Input}
-              maxLength="145"
-              label="Description"
-              placeholder="One Coin to rule them all"
-              value={this.state.description}
-              onChange={(event) =>
-                this.setState({ description: event.target.value })
-              }
-            /> */}
-          </Form.Group>
-          <Form.Group widths="equal">
-            <Form.TextArea
-              // control={Input}
-              maxLength="280"
-              label="Description"
-              placeholder="One Coin to rule them all"
-              value={this.state.description}
-              onChange={(event) =>
-                this.setState({ description: event.target.value })
-              }
-            />
-          </Form.Group>
-          <Form.Group widths="equal">
-            <Form.Field>
-              <label>Beneficiary Reward Ratio</label>
-              <Input
-                fluid
-                type="number"
-                max={100}
-                min={0}
-                placeholder="10"
-                label="%"
-                labelPosition="right"
-                value={this.state.beneficiaryRewardRatio}
-                onChange={(event) =>
-                  this.setState({ beneficiaryRewardRatio: event.target.value })
-                }
-              />
-            </Form.Field>
-            <Form.Field
-              control={Input}
-              label="Beneficiary Address"
-              placeholder={helper.beneficiary}
-              onChange={(event) =>
-                this.setState({ symbol: event.target.value })
-              }
-              value={this.state.beneficiary}
-              onChange={(event) =>
-                this.setState({ beneficiary: event.target.value })
-              }
-            />
-          </Form.Group>
-          <Form.Field>
-            <label>Value</label>
-            <Input
-              placeholder="1.00"
-              label="ETH"
-              labelPosition="right"
-              value={this.state.value}
-              onChange={(event) => this.setState({ value: event.target.value })}
-            />
-          </Form.Field>
-          <Form.Field>
-            <label>Coin image</label>
-            <ReactCrop
-              src={`https://ipfs.io/ipfs/${this.state.ipfsHash}`}
-              crop={this.state.crop}
-              onChange={this.onChange}
-              onImageLoaded={this.onImageLoaded}
-              locked={true}
-              style={{ borderRadius: "5px" }}
-            />
-            <Image
-              hidden={!this.state.ipfsHash}
-              src={`https://ipfs.io/ipfs/${this.state.ipfsHash}`}
-              size="medium"
-              rounded
-            />
-            <Button
-              icon="upload"
-              type="file"
-              label={{ as: "a", basic: true, content: "Upload image" }}
-              labelPosition="right"
-              onClick={() => this.fileInputRef.current.click()}
-            />
-            <input
-              ref={this.fileInputRef}
-              type="file"
-              hidden
-              onChange={this.fileChange}
-            />
-          </Form.Field>
-          <Message error header="Oops!" content={this.state.errorMessage} />
-          <Button loading={this.state.loading} primary type="submit">
-            Create
-          </Button>
+          <Grid>
+            <Grid.Row>
+              <Grid.Column width={12}>
+                <Form.Group widths="equal">
+                  <Form.Field
+                    control={Input}
+                    label="Name"
+                    placeholder="Basic Continuous Token"
+                    value={this.state.name}
+                    onChange={(event) => {
+                      this.setState({
+                        avatar: gravatar.url(
+                          event.target.value,
+                          { s: "400", r: "x", d: "retro" },
+                          true
+                        ),
+                      });
+                      this.setState({ name: event.target.value });
+                    }}
+                  />
+                  <Form.Field
+                    control={Input}
+                    label="Symbol"
+                    placeholder="BCT"
+                    value={this.state.symbol}
+                    onChange={(event) =>
+                      this.setState({ symbol: event.target.value })
+                    }
+                  />
+                </Form.Group>
+                <Form.Group widths="equal">
+                  <Form.TextArea
+                    // control={Input}
+                    maxLength="280"
+                    label="Description"
+                    placeholder="One Coin to rule them all"
+                    value={this.state.description}
+                    onChange={(event) =>
+                      this.setState({ description: event.target.value })
+                    }
+                  />
+                </Form.Group>
+                <Form.Group widths="equal">
+                  <Form.Field>
+                    <label>Beneficiary Reward Ratio</label>
+                    <Input
+                      fluid
+                      type="number"
+                      max={100}
+                      min={0}
+                      placeholder="10"
+                      label="%"
+                      labelPosition="right"
+                      value={this.state.beneficiaryRewardRatio}
+                      onChange={(event) =>
+                        this.setState({
+                          beneficiaryRewardRatio: event.target.value,
+                        })
+                      }
+                    />
+                  </Form.Field>
+                  <Form.Field
+                    control={Input}
+                    label="Beneficiary Address"
+                    placeholder={helper.beneficiary}
+                    onChange={(event) =>
+                      this.setState({ symbol: event.target.value })
+                    }
+                    value={this.state.beneficiary}
+                    onChange={(event) =>
+                      this.setState({ beneficiary: event.target.value })
+                    }
+                  />
+                </Form.Group>
+                <Form.Field>
+                  <label>Value</label>
+                  <Input
+                    placeholder="1.00"
+                    label="ETH"
+                    labelPosition="right"
+                    value={this.state.value}
+                    onChange={(event) =>
+                      this.setState({ value: event.target.value })
+                    }
+                  />
+                </Form.Field>
+                <Message
+                  error
+                  header="Oops!"
+                  content={this.state.errorMessage}
+                />
+                <Button loading={this.state.loading} primary type="submit">
+                  Create
+                </Button>
+              </Grid.Column>
+              <Grid.Column width={4}>
+                <Form.Field>
+                  <label>Coin image</label>
+                  <Image
+                    hidden={!!this.state.file}
+                    src={this.state.avatar}
+                    size="medium"
+                    rounded
+                  />
+                  <Image
+                    hidden={!this.state.croppedImageUrl}
+                    src={this.state.croppedImageUrl}
+                    size="medium"
+                    rounded
+                  />
+                  <Button
+                    icon="upload"
+                    type="file"
+                    label={{ as: "a", basic: true, content: "Upload image" }}
+                    labelPosition="right"
+                    onClick={() => this.fileInputRef.current.click()}
+                    style={{ marginTop: "14px" }}
+                  />
+                  <input
+                    ref={this.fileInputRef}
+                    type="file"
+                    hidden
+                    onChange={this.fileChange}
+                  />
+                  <Message
+                    info
+                    hidden={!this.state.file}
+                    header="400x400 pixels"
+                    content="Recommended dimensions for coin images."
+                  />
+                </Form.Field>
+              </Grid.Column>
+            </Grid.Row>
+            <Grid.Row>
+              <Grid.Column>
+                <Divider horizontal hidden={!this.state.file}>
+                  <Header as="h4" hidden={!this.state.file}>
+                    <Icon name="edit" hidden={!this.state.file} />
+                    Edit image
+                  </Header>
+                </Divider>
+                {this.state.file ? (
+                  <ReactCrop
+                    src={this.state.file}
+                    crop={this.state.crop}
+                    onImageLoaded={this.onImageLoaded}
+                    onComplete={this.onCropComplete}
+                    onChange={this.onCropChange}
+                    locked={true}
+                    style={styles}
+                  />
+                ) : null}
+              </Grid.Column>
+            </Grid.Row>
+          </Grid>
         </Form>
       </Layout>
     );

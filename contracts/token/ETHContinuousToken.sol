@@ -28,7 +28,7 @@ contract ETHContinuousToken is Ownable, ContinuousToken {
         uint32 _beneficiaryRewardRatio,
         address _beneficiary, // init msg.sender
         uint256 _value, // init msg.value
-        string _ipfsHash
+        string memory _ipfsHash
     )
         payable
         ContinuousToken(
@@ -80,7 +80,7 @@ contract ETHContinuousToken is Ownable, ContinuousToken {
             address,
             uint256,
             uint256,
-            string
+            string memory
         )
     {
         return (
