@@ -30,7 +30,7 @@ class ContributeForm extends Component {
     try {
       const accounts = await web3.eth.getAccounts();
       await coin.methods
-        .disburse(web3.utils.toWei(this.state.value, "ether"))
+        .contribute(web3.utils.toWei(this.state.value, "ether"))
         .send({
           gas: helper.gas,
           from: accounts[0],

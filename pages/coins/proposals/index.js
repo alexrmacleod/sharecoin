@@ -3,32 +3,32 @@ import { Button, Table } from "semantic-ui-react";
 import { Link } from "../../../routes";
 import Layout from "../../../components/Layout";
 import Coin from "../../../ethereum/coin";
-import RequestRow from "../../../components/RequestRow";
+import ProposalRow from "../../../components/ProposalRow";
 
-class RequestIndex extends Component {
+class ProposalIndex extends Component {
   static async getInitialProps(props) {
     const { address } = props.query;
     const coin = Coin(address);
-    const requestCount = await coin.methods.getRequestsCount().call();
+    const proposalCount = await coin.methods.getProposalsCount().call();
     const beneficiary = await coin.methods.beneficiary().call();
     // const approversCount = await coin.methods.approversCount().call();
-    const requests = await Promise.all(
-      Array(parseInt(requestCount))
+    const proposals = await Promise.all(
+      Array(parseInt(proposalCount))
         .fill()
         .map((element, index) => {
-          return coin.methods.requests(index).call();
+          return coin.methods.proposals(index).call();
         })
     );
-    return { address, requests, requestCount, beneficiary };
+    return { address, proposals, proposalCount, beneficiary };
   }
 
   renderRows() {
-    return this.props.requests.map((request, index) => {
+    return this.props.proposals.map((proposal, index) => {
       return (
-        <RequestRow
+        <ProposalRow
           key={index}
           id={index}
-          request={request}
+          proposal={proposal}
           address={this.props.address}
           beneficiary={this.props.beneficiary.toLowerCase()}
         />
@@ -40,13 +40,15 @@ class RequestIndex extends Component {
     const { Header, Row, HeaderCell, Body } = Table;
     return (
       <Layout>
-        <h3>Requests</h3>
-        <Link route={`/coins/${this.props.address}/requests/new`}>
+        <h3>Proposals</h3>
+        <div>Help this coin grow and create a proposal</div>
+        <Link route={`/coins/${this.props.address}/proposals/new`}>
           <a>
             <Button
               primary
-              content="Add Requests"
+              content="Create Proposal"
               floated="right"
+              icon="add"
               style={{ marginBottom: 10 }}
             />
           </a>
@@ -63,10 +65,10 @@ class RequestIndex extends Component {
           </Header>
           <Body>{this.renderRows()}</Body>
         </Table>
-        <div>Found {this.props.requestCount} requests</div>
+        <div>Found {this.props.proposalCount} proposals</div>
       </Layout>
     );
   }
 }
 
-export default RequestIndex;
+export default ProposalIndex;

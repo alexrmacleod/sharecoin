@@ -30,6 +30,7 @@ class CoinNew extends Component {
     value: "",
     errorMessage: "",
     loading: false,
+    blob: null,
     file: false,
     buffer: null,
     avatar: null,
@@ -39,25 +40,31 @@ class CoinNew extends Component {
 
   fileInputRef = React.createRef();
 
+  reader = async () => {
+    const gravatarBlob = await fetch(this.state.avatar).then((r) => r.blob());
+    const reader = new window.FileReader();
+    return new Promise((resolve, reject) => {
+      reader.readAsArrayBuffer(this.state.file ? this.blob : gravatarBlob);
+      reader.onload = () => {
+        this.setState({ buffer: Buffer(reader.result) });
+        resolve(reader.result);
+      };
+      reader.onerror = () => {
+        reject("oops, something went wrong with the file reader.");
+      };
+    });
+  };
+
   onSubmit = async (event) => {
     event.preventDefault();
     this.setState({ loading: true, errorMessage: "" });
+
     try {
-      // after crop send to buffer for ipfs
-      const reader = new window.FileReader();
-      reader.readAsArrayBuffer(
-        this.state.file
-          ? new File(this.state.croppedImageUrl, "avatar.jpeg")
-          : new File(this.state.avatar, "avatar.jpeg")
-      );
-      reader.onload = () => {
-        this.setState({ buffer: Buffer(reader.result) });
-      };
-
+      // read and buffer blob
+      const buffer = await this.reader();
       // ipfs
-      const result = await ipfs.add(this.state.buffer);
+      const result = await ipfs.add(buffer);
       this.setState({ ipfsHash: result.path });
-
       // create coin
       const accounts = await web3.eth.getAccounts();
       await factory.methods
@@ -74,7 +81,7 @@ class CoinNew extends Component {
         .send({
           gas: helper.gas,
           from: accounts[0],
-          value: web3.utils.toWei(this.state.value, "ether"),
+          // value: web3.utils.toWei(this.state.value, "ether"),
         });
       Router.pushRoute("/");
     } catch (error) {
@@ -152,6 +159,7 @@ class CoinNew extends Component {
           console.error("Canvas is empty");
           return;
         }
+        this.blob = blob;
         blob.name = fileName;
         window.URL.revokeObjectURL(this.fileUrl);
         this.fileUrl = window.URL.createObjectURL(blob);
@@ -192,6 +200,7 @@ class CoinNew extends Component {
                     control={Input}
                     label="Name"
                     placeholder="Basic Continuous Token"
+                    maxLength="25"
                     value={this.state.name}
                     onChange={(event) => {
                       this.setState({
@@ -208,16 +217,20 @@ class CoinNew extends Component {
                     control={Input}
                     label="Symbol"
                     placeholder="BCT"
+                    minLength="3"
+                    maxLength="4"
                     value={this.state.symbol}
                     onChange={(event) =>
-                      this.setState({ symbol: event.target.value })
+                      this.setState({
+                        symbol: event.target.value.toUpperCase(),
+                      })
                     }
                   />
                 </Form.Group>
                 <Form.Group widths="equal">
                   <Form.TextArea
                     // control={Input}
-                    maxLength="280"
+                    maxLength="2300"
                     label="Description"
                     placeholder="One Coin to rule them all"
                     value={this.state.description}

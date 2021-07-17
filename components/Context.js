@@ -19,8 +19,6 @@ export const Provider = (props) => {
   // }
 
   useEffect(async () => {
-    console.log("a:");
-
     const currentUrl = new URL(window.location.href);
     const forwarderOrigin =
       currentUrl.hostname === "localhost" ? "http://localhost:9010" : undefined;
@@ -30,7 +28,6 @@ export const Provider = (props) => {
     setOnboarding(onboarding);
 
     const isMetaMaskInstalled = () => {
-      console.log("b:");
       // check the ethereum binding on the window object to see if it's installed
       const { ethereum } = window;
       return Boolean(ethereum && ethereum.isMetaMask);
@@ -40,7 +37,6 @@ export const Provider = (props) => {
     const isMetaMaskConnected = () => accounts && accounts.length > 0;
 
     const updateButtons = () => {
-      console.log("c:");
       const accountButtonsDisabled =
         !isMetaMaskInstalled() || !isMetaMaskConnected();
 
@@ -70,7 +66,6 @@ export const Provider = (props) => {
     };
 
     async function handleNewAccounts(newAccounts) {
-      console.log("d:");
       accounts = newAccounts;
       setAccount(accounts[0]);
       updateButtons();
@@ -85,7 +80,6 @@ export const Provider = (props) => {
     }
 
     async function getNetworkAndChainId() {
-      console.log("e:");
       try {
         const chainId = await ethereum.request({
           method: "eth_chainId",
@@ -104,7 +98,6 @@ export const Provider = (props) => {
     updateButtons();
 
     if (isMetaMaskInstalled()) {
-      console.log("f:");
       ethereum.autoRefreshOnNetworkChange = false;
       getNetworkAndChainId();
 

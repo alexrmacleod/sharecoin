@@ -5,7 +5,7 @@ import web3 from "../../../ethereum/web3";
 import { Link, Router } from "../../../routes";
 import Layout from "../../../components/Layout";
 
-class NewRequest extends Component {
+class NewProposal extends Component {
   static async getInitialProps(props) {
     const { address } = props.query;
     return { address };
@@ -27,9 +27,9 @@ class NewRequest extends Component {
     try {
       const accounts = await web3.eth.getAccounts();
       await coin.methods
-        .createRequest(description, web3.utils.toWei(value, "ether"))
+        .createProposal(description, web3.utils.toWei(value, "ether"))
         .send({ from: accounts[0] });
-      Router.pushRoute(`/coins/${this.props.address}/requests`);
+      Router.pushRoute(`/coins/${this.props.address}/proposals`);
     } catch (error) {
       this.setState({ errorMessage: error.message });
     }
@@ -39,14 +39,16 @@ class NewRequest extends Component {
   render() {
     return (
       <Layout>
-        <Link route={`/coins/${this.props.address}/requests`}>
+        <Link route={`/coins/${this.props.address}/proposals`}>
           <a>Back</a>
         </Link>
-        <h3>Create Request</h3>
+        <h3>Create Proposal</h3>
         <Form onSubmit={this.onSubmit} error={!!this.state.errorMessage}>
           <Form.Field>
             <label>Description</label>
             <Input
+              maxLength="80"
+              placeholder="Update youtube thumbnails"
               value={this.state.description}
               onChange={(event) =>
                 this.setState({ description: event.target.value })
@@ -54,9 +56,13 @@ class NewRequest extends Component {
             />
           </Form.Field>
           <Form.Field>
-            <label>Value in Ether</label>
+            <label>Value</label>
             <Input
               value={this.state.value}
+              maxLength="5"
+              placeholder="1.88"
+              label="ETH"
+              labelPosition="right"
               onChange={(event) => this.setState({ value: event.target.value })}
             />
           </Form.Field>
@@ -68,4 +74,4 @@ class NewRequest extends Component {
   }
 }
 
-export default NewRequest;
+export default NewProposal;

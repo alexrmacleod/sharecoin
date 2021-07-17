@@ -5,10 +5,21 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./ContinuousToken.sol";
 import "hardhat/console.sol";
 
-contract ETHContinuousToken is Ownable, ContinuousToken {
+// Need additional attributes for creator / caretaker address and fees
+// creatorAddress
+// mintCreatorFee
+// burnCreatorFee
+// caretakerAddress
+// caretakerFee
+// mintCaretakerFee
+// burnCaretakerFee
+// TODO: Define ERC20ContinuousTokenWithFees
+
+contract ERC20ContinuousToken is Ownable, ContinuousToken {
+    ERC20 public reserveToken;
+
     string public coinName;
     string public coinSymbol;
-    uint256 internal reserve;
     string public description;
     uint32 public beneficiaryRewardRatio;
     address public beneficiary;
@@ -25,13 +36,14 @@ contract ETHContinuousToken is Ownable, ContinuousToken {
         string memory _symbol,
         uint256 _initialSupply,
         uint32 _reserveRatio,
+        ERC20 _reserveToken,
+        
         string memory _description,
         uint32 _beneficiaryRewardRatio,
         address _beneficiary, // init msg.sender
         // uint256 _value, // init msg.value
         string memory _ipfsHash
     )
-        payable
         ContinuousToken(
             _name,
             _symbol,
@@ -39,9 +51,12 @@ contract ETHContinuousToken is Ownable, ContinuousToken {
             _reserveRatio
         )
     {
+        console.log("here3");
+        reserveToken = _reserveToken;
+        console.log("here4");
         coinName = _name;
         coinSymbol = _symbol;
-        reserve = 10**18;// _value; // this used to be msg.value is it ok to start a bonding curve with fake ether?
+        // reserve = 10**18;// _value; // this used to be msg.value is it ok to start a bonding curve with fake ether?
         description = _description;
         beneficiaryRewardRatio = _beneficiaryRewardRatio;
         beneficiary = _beneficiary;
@@ -49,41 +64,44 @@ contract ETHContinuousToken is Ownable, ContinuousToken {
         transferOwnership(_beneficiary);
     }
 
-    function mint() public payable {
+    // function() internal {
+    //     revert("Cannot call fallback function.");
+    // }
+
+    function mint(uint256 _amount) public payable {
         // count holders
         if(balanceOf(msg.sender) <= 0) {
             holders += 1;
         }
 
+        // beneficiary cut
         beneficiaryReward = msg.value * beneficiaryRewardRatio / 1000000;
         beneficiaryRewards += beneficiaryReward;
         uint256 purchaseAmount = msg.value - beneficiaryReward;
-        _continuousMint(purchaseAmount);
-        reserve = reserve += purchaseAmount;
+
+        _continuousMint(_amount);
+        require(
+            reserveToken.transferFrom(msg.sender, address(this), _amount),
+            "mint() ERC20.transferFrom failed."
+        );
     }
 
     function burn(uint256 _amount) public payable {
-        uint256 refundAmount = _continuousBurn(_amount);
-        reserve = reserve - refundAmount;
-        payable(msg.sender).transfer(refundAmount);
-
         // decrement holders
         if(balanceOf(msg.sender) <= 0) {
             holders -= 1;
         }
+        
+        uint256 returnAmount = _continuousBurn(_amount);
+        require(
+            reserveToken.transfer(msg.sender, returnAmount),
+            "burn() ERC20.transfer failed."
+        );
     }
 
     function reserveBalance() public override view returns (uint256) {
-        return reserve;
+        return reserveToken.balanceOf(address(this));
     }
-
-    // function price() public view returns (uint32) {
-    //     // generalLog(x)
-    //     // generalExp(x,x)
-    //     return (reserve * generalExp(generalLog(getContinuousMintReward(scale)/totalSupply()),scale)/beneficiaryRewardRatio-1) -1;
-    // }
-
-    // get summary 
 
     function getSummary()
         public
@@ -114,15 +132,6 @@ contract ETHContinuousToken is Ownable, ContinuousToken {
             holders
         );
     }
-
-    // anyone can fund the treasury only coin holders have a claim on the deposits
-
-    // function contribute() public payable {
-    //     require(msg.value > minimumContribution);
-
-    //     approvers[msg.sender] = true;
-    //     approversCount++;
-    // }
 
     // only beneficiary can withdraw
     function withdraw(uint256 _amount) public payable onlyOwner {
@@ -190,31 +199,4 @@ contract ETHContinuousToken is Ownable, ContinuousToken {
         dividen += msg.value;
         dividenCount++;
     }
-
-    // function claim() public payable {
-    //     console.log("dividen", dividen);
-    //     console.log("dividenCount", dividenCount);
-    //     if (!dividens[msg.sender].used) {
-    //         uint amount = dividen * balanceOf(msg.sender) / totalSupply() - scale;
-    //         console.log("amount", amount);
-    //         Dividen memory newDividen = Dividen({
-    //             amount: amount,
-    //             count: 1,
-    //             used: true
-    //         });
-    //         dividens[msg.sender] = newDividen;
-    //         payable(msg.sender).transfer(amount);
-    //         console.log("1", amount);
-    //     } else if (dividens[msg.sender].used && dividens[msg.sender].count < dividenCount) {
-    //         uint amount = dividen * balanceOf(msg.sender) / totalSupply() - scale;
-    //         console.log("amount", amount);
-    //         dividens[msg.sender].amount += amount - dividens[msg.sender].amount;
-    //         dividens[msg.sender].count++;
-    //         payable(msg.sender).transfer(amount - dividens[msg.sender].amount);
-    //         console.log("2 dividens[msg.sender].amount", dividens[msg.sender].amount);
-    //         console.log("2 dividens[msg.sender].count", dividens[msg.sender].count);
-    //         console.log("2 amount - dividens[msg.sender].amount", amount - dividens[msg.sender].amount);
-    //     }
-    // }
-
 }

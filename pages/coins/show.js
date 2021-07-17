@@ -1,6 +1,15 @@
 import React, { Component } from "react";
 import { Context } from "../../components/Context";
-import { Card, Grid, Button, Input, Menu } from "semantic-ui-react";
+import {
+  Card,
+  Grid,
+  Button,
+  Divider,
+  Menu,
+  Header,
+  Icon,
+  Image,
+} from "semantic-ui-react";
 import Layout from "../../components/Layout";
 import MintForm from "../../components/MintForm";
 import BurnForm from "../../components/BurnForm";
@@ -10,6 +19,7 @@ import Coin from "../../ethereum/coin";
 import { Link } from "../../routes";
 import web3 from "../../ethereum/web3";
 import ContributeForm from "../../components/ContributeForm";
+import helper from "../../scripts/helper";
 
 class CoinShow extends Component {
   state = { activeItem: "Buy" };
@@ -57,12 +67,64 @@ class CoinShow extends Component {
     const reserve = await coin.methods.reserveBalance().call();
     // get supply
     const supply = await coin.methods.continuousSupply().call();
+    // get proposal count
+    const proposalCount = await coin.methods.getProposalsCount().call();
+
+    // // const start =
+    // //   reserve ** (price / supply / ((500000 / 1000000) * 100) - 1) - 1;
+    // // const rtr = start - 1;
+    const a = web3.utils.fromWei(reserve, "ether") * Math.exp(1);
+    const b =
+      web3.utils.fromWei(price, "ether") / web3.utils.fromWei(supply, "ether");
+    const c = Math.log(b);
+    const d = 500000 / 1000000 - 1;
+    const e = a ** (c / d);
+    const f = e - 1;
+    // const f = e - 1;
+    console.log("a", a);
+    console.log("b", b);
+    console.log("c", c);
+    console.log("d", d);
+    console.log("e", e);
+    console.log("f", f);
+
+    // const rtr =
+    //   reserve ** (Math.log(price / supply) / ((500000 / 1000000) * 100) - 1) -
+    //   1;
+    // // console.log(start);
+    // // console.log("start");
+    // // console.log(rtr);
+    // // console.log("rtr");
+    console.log("reserve", reserve);
+    console.log("supply", supply);
+    console.log("price", price);
+    console.log("ratio", 500000 / 1000000);
+    console.log("Math.log(price / supply)", Math.log(price / supply));
+    console.log(
+      "reserve ** (Math.log(price / supply)",
+      reserve ** Math.log(price / supply)
+    );
+    console.log(
+      "reserve ** (Math.log(price / supply) / ((500000 / 1000000) ",
+      reserve ** Math.log(price / supply) / (500000 / 1000000 - 1)
+    );
+    console.log(
+      "(reserve ** Math.log(price / supply) / (500000 / 1000000 - 1)) - 1",
+      reserve *
+        Math.exp(1) ** (Math.log(price / supply) / (500000 / 1000000 - 1)) -
+        1
+    );
+    const answer =
+      reserve * Math.exp(1) ** (Math.log(price / supply) / (0.5 - 1)) - 1;
+    const finalAnswer = web3.utils.fromWei(answer.toString(), "ether");
+    console.log("finalAnswer", finalAnswer);
 
     return {
       supply: web3.utils.fromWei(supply, "ether"),
       reserve: web3.utils.fromWei(reserve, "ether"),
       date: new Date().toString(),
       price: web3.utils.fromWei(price, "ether"),
+      // price: d,
       address: props.query.address,
       name: summary[0],
       symbol: summary[1],
@@ -72,6 +134,8 @@ class CoinShow extends Component {
       beneficiaryRewards: web3.utils.fromWei(summary[6], "ether"),
       treasury: summary[7],
       ipfsHash: summary[8],
+      holders: summary[9],
+      proposalCount: proposalCount,
     };
   }
 
@@ -122,6 +186,7 @@ class CoinShow extends Component {
 
   renderCards() {
     const {
+      address,
       supply,
       reserve,
       name,
@@ -132,126 +197,183 @@ class CoinShow extends Component {
       beneficiary,
       beneficiaryRewards,
       treasury,
+      ipfsHash,
+      holders,
+      proposalCount,
     } = this.props;
 
     const items = [
+      // {
+      //   image: `https://ipfs.io/ipfs/${ipfsHash}`,
+      //   header: symbol,
+      //   meta: name,
+      //   description: description,
+      // },
       {
-        header: symbol,
-        meta: name,
-        description: description,
-        style: { overflowWrap: "break-word" },
+        header: holders,
+        meta: holders > 1 || holders < 1 ? "Holders" : "Holder",
+        description: "The number of accounts that hold this coin.",
+        stackable: "true",
+      },
+      {
+        header: proposalCount,
+        meta: "Improvement proposals",
+        description:
+          "Each proposal is active for 1 week. Only the coin beneficiary approves proposals.",
+        stackable: "true",
       },
       {
         header: (beneficiaryRewardRatio / 1000000) * 100 + "%",
         meta: "Beneficiary Reward Ratio",
         description:
           "The founder of every coin can choose a beneficiary address to send a percentage of each coin purchase to",
+        stackable: "true",
       },
-      // {
-      //   header: web3.utils.fromWei(beneficiaryRewards, "ether") + " ETH",
-      //   meta: "Beneficiary Rewards",
-      //   description: "Rewards in ether from coin sales",
-      // },
       {
         header: beneficiary,
         meta: "Address of Beneficiary",
         description:
           "The proceeds from the beneficiary reward ratio can be withdrawn wtih this address",
         style: { overflowWrap: "break-word" },
+        stackable: "true",
       },
+      // {
+      //   header: treasury,
+      //   meta: "Treasury",
+      //   description: "Contributed funds can be withdrawen by coin holders ",
+      //   style: { overflowWrap: "break-word" },
+      // },
       {
-        header: treasury,
-        meta: "Treasury",
-        description: "Contributed funds can be withdrawen by coin holders ",
+        header: address,
+        meta: "Contract address",
+        description:
+          "This is the address of the coin. Add this address to your metamask to see balance",
         style: { overflowWrap: "break-word" },
+        stackable: "true",
       },
       {
         header: reserve,
         meta: "Reserve",
         description: "The reserve in this coin",
+        stackable: "true",
       },
       {
         header: supply,
         meta: "Supply",
         description: "The supply of this coin",
+        stackable: "true",
       },
     ];
-    return <Card.Group items={items} />;
+    return <Card.Group itemsPerRow={2} items={items} />;
   }
 
   render() {
     const { account } = this.context;
-    const { reserve, price, address, date, beneficiary, beneficiaryRewards } =
-      this.props;
-
+    const {
+      treasury,
+      reserve,
+      symbol,
+      name,
+      ipfsHash,
+      description,
+      price,
+      address,
+      date,
+      beneficiary,
+      beneficiaryRewards,
+    } = this.props;
     const { activeItem } = this.state;
+    const contributeForm = <ContributeForm address={address} />;
+    const withdrawForm = (
+      <WithdrawForm
+        address={address}
+        beneficiary={beneficiary}
+        beneficiaryRewards={beneficiaryRewards}
+      />
+    );
+    const proposalButton = (
+      <Link route={`/coins/${this.props.address}/proposals`}>
+        <a>
+          <Button content="View Proposals" primary />
+        </a>
+      </Link>
+    );
+
     return (
       <Layout>
-        <h3>{this.props.address}</h3>
+        <h3>{name}</h3>
         <Grid>
           <Grid.Row>
-            <Image
-              src={`https://ipfs.io/ipfs/${this.props.ipfsHash}`}
-              size="medium"
-              rounded
-            />
-            <Grid.Column width={9}>{this.renderCards()}</Grid.Column>
-            <Grid.Column width={7}>
+            <Grid.Column width={10}>
+              {/* <Image
+                rounded
+                bordered
+                size="small"
+                src={`https://ipfs.io/ipfs/${ipfsHash}`}
+              /> */}
+              <Card size="small" image={`https://ipfs.io/ipfs/${ipfsHash}`} />
               <Card
-                header={price + " " + this.props.symbol}
-                meta="1 ether equals"
-                description={date}
+                header={symbol}
+                meta={name}
+                description={description}
+                extra={proposalButton}
                 fluid={true}
               />
-              <Menu secondary>
-                <Menu.Item
-                  color="green"
-                  name="Buy"
-                  active={activeItem === "Buy"}
-                  onClick={this.handleItemClick}
-                />
-                <Menu.Item
-                  color="red"
-                  name="Sell"
-                  active={activeItem === "Sell"}
-                  onClick={this.handleItemClick}
-                />
-                <Menu.Item
-                  name="Transfer"
-                  active={activeItem === "Transfer"}
-                  onClick={this.handleItemClick}
-                />
-              </Menu>
-              {this.renderForm(this.state.activeItem)}
+              <Divider horizontal>
+                <Header as="h4">
+                  <Icon name="info" />
+                  Coin details
+                </Header>
+              </Divider>
+              <Grid.Column>{this.renderCards()}</Grid.Column>
+            </Grid.Column>
+
+            <Grid.Column width={6}>
+              <Card fluid style={{ overflowWrap: "break-word" }}>
+                <Card.Content>
+                  <Card.Header>{price + " " + this.props.symbol}</Card.Header>
+                  <Card.Meta>1 ether equals</Card.Meta>
+                  <Card.Description>{date}</Card.Description>
+                </Card.Content>
+                <Card.Content extra>
+                  <Menu secondary>
+                    <Menu.Item
+                      color="green"
+                      name="Buy"
+                      active={activeItem === "Buy"}
+                      onClick={this.handleItemClick}
+                    />
+                    <Menu.Item
+                      color="red"
+                      name="Sell"
+                      active={activeItem === "Sell"}
+                      onClick={this.handleItemClick}
+                    />
+                    <Menu.Item
+                      name="Transfer"
+                      active={activeItem === "Transfer"}
+                      onClick={this.handleItemClick}
+                    />
+                  </Menu>
+                  {this.renderForm(this.state.activeItem)}
+                </Card.Content>
+              </Card>
               <Card
                 header={beneficiaryRewards + " ETH"}
                 meta="Beneficiary Rewards"
                 description="Rewards in ether from coin sales"
                 fluid={true}
+                extra={withdrawForm}
+                style={{ overflowWrap: "break-word" }}
               />
-              <WithdrawForm
-                address={address}
-                beneficiary={beneficiary}
-                beneficiaryRewards={beneficiaryRewards}
+              <Card
+                header={treasury}
+                meta="Treasury"
+                description="Payout funds to all coin holders"
+                fluid={true}
+                extra={contributeForm}
+                style={{ overflowWrap: "break-word" }}
               />
-              <Grid.Row>
-                <ContributeForm address={address} />
-              </Grid.Row>
-            </Grid.Column>
-          </Grid.Row>
-          <Grid.Row>
-            <Grid.Column>
-              <Link route={`/coins/${this.props.address}/requests`}>
-                <a>
-                  <Button content="View Requests" primary />
-                </a>
-              </Link>
-              <Button
-                content="sponsoredBrun"
-                primary
-                onClick={this.sponsoredBurn}
-              />
-              <Button content="claim" primary onClick={this.claim} />
             </Grid.Column>
           </Grid.Row>
         </Grid>
