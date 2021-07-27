@@ -75,9 +75,9 @@ contract ERC20ContinuousToken is Ownable, ContinuousToken {
         }
 
         // beneficiary cut
-        beneficiaryReward = msg.value * beneficiaryRewardRatio / 1000000;
-        beneficiaryRewards += beneficiaryReward;
-        uint256 purchaseAmount = msg.value - beneficiaryReward;
+        // beneficiaryReward = msg.value * beneficiaryRewardRatio / 1000000;
+        // beneficiaryRewards += beneficiaryReward;
+        // uint256 purchaseAmount = msg.value - beneficiaryReward;
 
         _continuousMint(_amount);
         require(

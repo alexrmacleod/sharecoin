@@ -15,8 +15,8 @@ contract ETHContinuousToken is Ownable, ContinuousToken {
     uint256 public beneficiaryRewards;
     uint256 public beneficiaryReward;
     string public ipfsHash;
-    address public treasury;
-    uint256 public dividen;
+    // address public treasury;
+    uint256 public treasury;
     uint256 constant public scale = 10**18;
     uint public holders;
 
@@ -109,7 +109,7 @@ contract ETHContinuousToken is Ownable, ContinuousToken {
             beneficiaryRewardRatio,
             beneficiary,
             beneficiaryRewards,
-            dividen,
+            treasury,
             ipfsHash,
             holders
         );
@@ -176,45 +176,48 @@ contract ETHContinuousToken is Ownable, ContinuousToken {
         return proposals.length;
     }
 
+    function updateBeneficiaryRewardRatio(uint32 _beneficiaryRewardRatio) public onlyOwner {
+        beneficiaryRewardRatio = _beneficiaryRewardRatio;
+    }
+
+    function updateDescription(string memory _description) public onlyOwner {
+        description = _description;
+    }
+
     // treasury
     struct Dividen {
         uint amount;
-        uint count;
-        bool used;
+        uint timestamp;
+        bool claimed;
     }
-    uint dividenCount;
+
     mapping(address => Dividen) dividens;
 
     function contribute() public payable {
         require(msg.value > 0);
-        dividen += msg.value;
-        dividenCount++;
+        treasury += msg.value;
     }
 
-    // function claim() public payable {
-    //     console.log("dividen", dividen);
-    //     console.log("dividenCount", dividenCount);
-    //     if (!dividens[msg.sender].used) {
-    //         uint amount = dividen * balanceOf(msg.sender) / totalSupply() - scale;
-    //         console.log("amount", amount);
-    //         Dividen memory newDividen = Dividen({
-    //             amount: amount,
-    //             count: 1,
-    //             used: true
-    //         });
-    //         dividens[msg.sender] = newDividen;
-    //         payable(msg.sender).transfer(amount);
-    //         console.log("1", amount);
-    //     } else if (dividens[msg.sender].used && dividens[msg.sender].count < dividenCount) {
-    //         uint amount = dividen * balanceOf(msg.sender) / totalSupply() - scale;
-    //         console.log("amount", amount);
-    //         dividens[msg.sender].amount += amount - dividens[msg.sender].amount;
-    //         dividens[msg.sender].count++;
-    //         payable(msg.sender).transfer(amount - dividens[msg.sender].amount);
-    //         console.log("2 dividens[msg.sender].amount", dividens[msg.sender].amount);
-    //         console.log("2 dividens[msg.sender].count", dividens[msg.sender].count);
-    //         console.log("2 amount - dividens[msg.sender].amount", amount - dividens[msg.sender].amount);
-    //     }
-    // }
+    function dividen() public view returns (uint256) {
+        return treasury * balanceOf(msg.sender) / totalSupply();
+    }
 
+    function claim(uint256 _amount) public payable {
+        require(balanceOf(msg.sender) > 0, "you need to own this coin to earn dividens");
+        uint amount = treasury * balanceOf(msg.sender) / totalSupply();
+        require(_amount <= amount, "amount is too large");
+        if (_amount < amount) {
+            payable(msg.sender).transfer(_amount);
+        } else {
+            payable(msg.sender).transfer(amount);
+        }
+
+        // Dividen memory newDividen = Dividen({
+        //     amount: amount,
+        //     timestamp: block.timestamp,
+        //     claimed: true
+        // });
+
+        // dividens[msg.sender] = newDividen;
+    }
 }

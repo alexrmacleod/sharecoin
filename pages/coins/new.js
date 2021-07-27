@@ -71,7 +71,7 @@ class CoinNew extends Component {
         .createCoin(
           this.state.name,
           this.state.symbol,
-          this.state.description,
+          web3.utils.utf8ToHex(this.state.description),
           this.state.beneficiaryRewardRatio * 10000,
           this.state.beneficiary,
           helper.initialSupply,

@@ -29,12 +29,10 @@ class ContributeForm extends Component {
     this.setState({ loading: true, errorMessage: "" });
     try {
       const accounts = await web3.eth.getAccounts();
-      await coin.methods
-        .contribute(web3.utils.toWei(this.state.value, "ether"))
-        .send({
-          gas: helper.gas,
-          from: accounts[0],
-        });
+      await coin.methods.contribute().send({
+        from: accounts[0],
+        value: web3.utils.toWei(this.state.value, "ether"),
+      });
       Router.replaceRoute(`/coins/${this.props.address}`);
     } catch (error) {
       this.setState({ errorMessage: error.message });

@@ -2,12 +2,12 @@ import Web3 from "Web3";
 let web3;
 
 if (typeof window !== "undefined" && typeof window.ethereum !== "undefined") {
-  console.log("web3Metamask");
+  // console.log("web3Metamask");
   // we are in the browser and metamask is running.
   window.ethereum.request({ method: "eth_requestAccounts" });
   web3 = new Web3(ethereum);
 } else {
-  console.log("web3Server");
+  // console.log("web3Server");
   // we are on the server *OR* the user is not running metamask
   // localhost
   const provider = new Web3(

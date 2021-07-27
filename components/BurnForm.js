@@ -63,11 +63,9 @@ class BurnForm extends Component {
   async setMessage(coinBalance) {
     const coin = Coin(this.props.address);
     try {
-      var price;
-      await coin.methods
+      const price = await coin.methods
         .getContinuousBurnRefund(coinBalance)
-        .call()
-        .then((value) => (price = value));
+        .call();
       this.setState({
         message: `${web3.utils.fromWei(price, "ether")} ETH`,
       });

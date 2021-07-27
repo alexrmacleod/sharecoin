@@ -16,6 +16,7 @@
     "ganache-cli": "^6.12.2",
     "gravatar": "^1.8.1",
     "ipfs-http-client": "^50.1.2",
+    "linkifyjs": "^3.0.0-beta.3",
     "mocha": "^8.3.2",
     "next": "^10.2.3",
     "next-routes": "^1.4.2",

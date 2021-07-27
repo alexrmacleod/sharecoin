@@ -6,6 +6,8 @@ import factory from "../ethereum/factory";
 import { Link } from "../routes";
 import Coin from "../ethereum/coin";
 import web3 from "../ethereum/web3";
+import Linkify from "linkifyjs/react";
+import "linkifyjs/plugins/hashtag"; // optional
 
 class Index extends Component {
   static contextType = Context;
@@ -29,6 +31,7 @@ class Index extends Component {
   renderCoins() {
     const { coins, summarys } = this.props;
     const items = coins.map((address, index) => {
+      const description = web3.utils.hexToUtf8(summarys[index].summary[3]);
       return (
         <Card fluid={true} key={index}>
           <Card.Content>
@@ -50,9 +53,11 @@ class Index extends Component {
                 summarys[index].summary[1]}
             </Card.Meta>
             <Card.Description>
-              {summarys[index].summary[3].length > 127
-                ? summarys[index].summary[3].substring(0, 127) + "..."
-                : summarys[index].summary[3]}
+              <Linkify>
+                {description.length > 127
+                  ? description.substring(0, 127) + "..."
+                  : description}
+              </Linkify>
             </Card.Description>
           </Card.Content>
           <Card.Content extra>

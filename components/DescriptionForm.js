@@ -6,9 +6,9 @@ import web3, { setWeb3, connected } from "../ethereum/web3";
 import { Router } from "../routes";
 import helper from "../scripts/helper";
 
-class WithdrawForm extends Component {
+class DescriptionForm extends Component {
   state = {
-    value: "",
+    value: null,
     errorMessage: "",
     loading: false,
   };
@@ -17,7 +17,7 @@ class WithdrawForm extends Component {
   onClick = async (event) => {
     event.preventDefault();
     this.setState({
-      value: this.props.beneficiaryRewards,
+      value: "",
     });
   };
 
@@ -28,7 +28,7 @@ class WithdrawForm extends Component {
     try {
       const accounts = await web3.eth.getAccounts();
       await coin.methods
-        .withdraw(web3.utils.toWei(this.state.value, "ether"))
+        .updateDescription(web3.utils.utf8ToHex(this.state.value))
         .send({
           gas: helper.gas,
           from: accounts[0],
@@ -43,34 +43,43 @@ class WithdrawForm extends Component {
 
   render() {
     const { account, connected } = this.context;
+
     return (
       <Form onSubmit={this.onSubmit} error={!!this.state.errorMessage}>
-        <Form.Field>
-          <Input
-            value={this.state.value}
-            onChange={(event) => this.setState({ value: event.target.value })}
-            label="ETH"
-            labelPosition="right"
+        <Form.Group widths="equal">
+          <Form.TextArea
+            maxLength="2300"
+            // label="Description"
+            placeholder="One Coin to rule them all"
+            value={
+              this.state.value !== null
+                ? this.state.value
+                : this.props.description
+            }
+            onChange={(event) =>
+              this.setState({
+                value: event.target.value,
+              })
+            }
           />
-        </Form.Field>
+        </Form.Group>
+
         <Message error header="Oops!" content={this.state.errorMessage} />
         <Button
           type="button"
-          content="Max"
+          content="Clear"
           onClick={this.onClick}
           disabled={!connected}
         />
         <Button
           primary
-          content="Withdraw"
+          content="Update"
           loading={this.state.loading}
-          disabled={
-            !connected || account !== this.props.beneficiary.toLowerCase()
-          }
+          disabled={!connected}
         />
       </Form>
     );
   }
 }
 
-export default WithdrawForm;
+export default DescriptionForm;

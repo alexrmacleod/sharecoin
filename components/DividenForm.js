@@ -2,11 +2,11 @@ import React, { Component } from "react";
 import { Context } from "./Context";
 import { Input, Message, Form, Button, Menu } from "semantic-ui-react";
 import Coin from "../ethereum/coin";
-import web3, { setWeb3, connected } from "../ethereum/web3";
+import web3 from "../ethereum/web3";
 import { Router } from "../routes";
 import helper from "../scripts/helper";
 
-class WithdrawForm extends Component {
+class DividenForm extends Component {
   state = {
     value: "",
     errorMessage: "",
@@ -16,8 +16,9 @@ class WithdrawForm extends Component {
 
   onClick = async (event) => {
     event.preventDefault();
+
     this.setState({
-      value: this.props.beneficiaryRewards,
+      value: this.props.dividen,
     });
   };
 
@@ -28,7 +29,7 @@ class WithdrawForm extends Component {
     try {
       const accounts = await web3.eth.getAccounts();
       await coin.methods
-        .withdraw(web3.utils.toWei(this.state.value, "ether"))
+        .claim(web3.utils.toWei(this.state.value, "ether"))
         .send({
           gas: helper.gas,
           from: accounts[0],
@@ -62,15 +63,13 @@ class WithdrawForm extends Component {
         />
         <Button
           primary
-          content="Withdraw"
+          content="Claim"
           loading={this.state.loading}
-          disabled={
-            !connected || account !== this.props.beneficiary.toLowerCase()
-          }
+          disabled={!connected || this.props.dividen <= 0}
         />
       </Form>
     );
   }
 }
 
-export default WithdrawForm;
+export default DividenForm;

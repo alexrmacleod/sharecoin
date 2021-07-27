@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Button, Table } from "semantic-ui-react";
+import { Button, Table, Message, Grid } from "semantic-ui-react";
 import { Link } from "../../../routes";
 import Layout from "../../../components/Layout";
 import Coin from "../../../ethereum/coin";
@@ -40,19 +40,41 @@ class ProposalIndex extends Component {
     const { Header, Row, HeaderCell, Body } = Table;
     return (
       <Layout>
-        <h3>Proposals</h3>
-        <div>Help this coin grow and create a proposal</div>
-        <Link route={`/coins/${this.props.address}/proposals/new`}>
-          <a>
-            <Button
-              primary
-              content="Create Proposal"
-              floated="right"
-              icon="add"
-              style={{ marginBottom: 10 }}
-            />
-          </a>
+        <Link route={`/coins/${this.props.address}`}>
+          <a>Back</a>
         </Link>
+        <h3>Proposals</h3>
+        <Grid>
+          <Grid.Row>
+            <Grid.Column>
+              <Message info>
+                <Message.Header>
+                  Help this coin grow and create a proposal.
+                </Message.Header>
+                <p>
+                  Each proposal is active for 1 week. Only the beneficiary (
+                  {this.props.beneficiary}) can approve proposals.
+                </p>
+              </Message>
+            </Grid.Column>
+          </Grid.Row>
+          <Grid.Row>
+            <Grid.Column>
+              <Link route={`/coins/${this.props.address}/proposals/new`}>
+                <a>
+                  <Button
+                    primary
+                    content="Create Proposal"
+                    floated="right"
+                    icon="add"
+                    style={{ marginBottom: 10 }}
+                  />
+                </a>
+              </Link>
+            </Grid.Column>
+          </Grid.Row>
+        </Grid>
+
         <Table celled padded>
           <Header>
             <Row>
@@ -65,7 +87,12 @@ class ProposalIndex extends Component {
           </Header>
           <Body>{this.renderRows()}</Body>
         </Table>
-        <div>Found {this.props.proposalCount} proposals</div>
+        <div>
+          Found {this.props.proposalCount}{" "}
+          {this.props.proposalCount > 1 || this.props.proposalCount < 1
+            ? "proposals"
+            : "proposal"}
+        </div>
       </Layout>
     );
   }

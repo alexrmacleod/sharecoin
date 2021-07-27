@@ -6,9 +6,9 @@ import web3, { setWeb3, connected } from "../ethereum/web3";
 import { Router } from "../routes";
 import helper from "../scripts/helper";
 
-class WithdrawForm extends Component {
+class RewardForm extends Component {
   state = {
-    value: "",
+    value: null,
     errorMessage: "",
     loading: false,
   };
@@ -17,7 +17,7 @@ class WithdrawForm extends Component {
   onClick = async (event) => {
     event.preventDefault();
     this.setState({
-      value: this.props.beneficiaryRewards,
+      value: 100,
     });
   };
 
@@ -28,12 +28,14 @@ class WithdrawForm extends Component {
     try {
       const accounts = await web3.eth.getAccounts();
       await coin.methods
-        .withdraw(web3.utils.toWei(this.state.value, "ether"))
+        .updateBeneficiaryRewardRatio(this.state.value * 10000)
         .send({
           gas: helper.gas,
           from: accounts[0],
         });
+      // switch form back to inactive
       this.props.onClick("inactive");
+      // refresh
       Router.replaceRoute(`/coins/${this.props.address}`);
     } catch (error) {
       this.setState({ errorMessage: error.message });
@@ -43,14 +45,28 @@ class WithdrawForm extends Component {
 
   render() {
     const { account, connected } = this.context;
+
     return (
       <Form onSubmit={this.onSubmit} error={!!this.state.errorMessage}>
         <Form.Field>
           <Input
-            value={this.state.value}
-            onChange={(event) => this.setState({ value: event.target.value })}
-            label="ETH"
+            fluid
+            type="number"
+            max={100}
+            min={0}
+            placeholder={this.props.beneficiaryRewardRatio / 10000}
+            label="%"
             labelPosition="right"
+            value={
+              this.state.value !== null
+                ? this.state.value
+                : this.props.beneficiaryRewardRatio / 10000
+            }
+            onChange={(event) =>
+              this.setState({
+                value: event.target.value,
+              })
+            }
           />
         </Form.Field>
         <Message error header="Oops!" content={this.state.errorMessage} />
@@ -62,15 +78,13 @@ class WithdrawForm extends Component {
         />
         <Button
           primary
-          content="Withdraw"
+          content="Update"
           loading={this.state.loading}
-          disabled={
-            !connected || account !== this.props.beneficiary.toLowerCase()
-          }
+          disabled={!connected}
         />
       </Form>
     );
   }
 }
 
-export default WithdrawForm;
+export default RewardForm;
