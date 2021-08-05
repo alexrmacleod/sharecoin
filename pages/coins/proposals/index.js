@@ -40,9 +40,9 @@ class ProposalIndex extends Component {
     const { Header, Row, HeaderCell, Body } = Table;
     return (
       <Layout>
-        <Link route={`/coins/${this.props.address}`}>
+        {/* <Link route={`/coins/${this.props.address}`}>
           <a>Back</a>
-        </Link>
+        </Link> */}
         <h3>Proposals</h3>
         <Grid>
           <Grid.Row>

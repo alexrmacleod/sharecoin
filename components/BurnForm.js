@@ -21,7 +21,10 @@ class BurnForm extends Component {
     try {
       const accounts = await web3.eth.getAccounts();
       await coin.methods
-        .burn(web3.utils.toWei(this.state.value, "ether"))
+        .burn(
+          web3.utils.toWei(this.state.value, "ether"),
+          this.props.holders.indexOf(accounts[0])
+        )
         .send({
           from: accounts[0],
         });

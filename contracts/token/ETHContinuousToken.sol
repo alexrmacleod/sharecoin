@@ -2,8 +2,12 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+// import "@openzeppelin/contracts/finance/PaymentSplitter.sol";
 import "./ContinuousToken.sol";
-import "hardhat/console.sol";
+// import "hardhat/console.sol";
+
+// import "@openzeppelin/contracts/utils/Address.sol";
+// import "@openzeppelin/contracts/utils/Context.sol";
 
 contract ETHContinuousToken is Ownable, ContinuousToken {
     string public coinName;
@@ -16,10 +20,9 @@ contract ETHContinuousToken is Ownable, ContinuousToken {
     uint256 public beneficiaryReward;
     string public ipfsHash;
     // address public treasury;
-    uint256 public treasury;
     uint256 constant public scale = 10**18;
-    uint public holders;
-
+    // uint public holderCount;
+    
     constructor(
         string memory _name,
         string memory _symbol,
@@ -50,11 +53,6 @@ contract ETHContinuousToken is Ownable, ContinuousToken {
     }
 
     function mint() public payable {
-        // count holders
-        if(balanceOf(msg.sender) <= 0) {
-            holders += 1;
-        }
-
         beneficiaryReward = msg.value * beneficiaryRewardRatio / 1000000;
         beneficiaryRewards += beneficiaryReward;
         uint256 purchaseAmount = msg.value - beneficiaryReward;
@@ -62,15 +60,10 @@ contract ETHContinuousToken is Ownable, ContinuousToken {
         reserve = reserve += purchaseAmount;
     }
 
-    function burn(uint256 _amount) public payable {
-        uint256 refundAmount = _continuousBurn(_amount);
+    function burn(uint256 _amount, uint _index) public payable {
+        uint256 refundAmount = _continuousBurn(_amount, _index);
         reserve = reserve - refundAmount;
         payable(msg.sender).transfer(refundAmount);
-
-        // decrement holders
-        if(balanceOf(msg.sender) <= 0) {
-            holders -= 1;
-        }
     }
 
     function reserveBalance() public override view returns (uint256) {
@@ -109,13 +102,14 @@ contract ETHContinuousToken is Ownable, ContinuousToken {
             beneficiaryRewardRatio,
             beneficiary,
             beneficiaryRewards,
-            treasury,
+            contribution,
             ipfsHash,
-            holders
+            holders.length
         );
     }
 
-    // anyone can fund the treasury only coin holders have a claim on the deposits
+    
+    // anyone can fund the treasury only coin holderCount have a claim on the deposits
 
     // function contribute() public payable {
     //     require(msg.value > minimumContribution);
@@ -185,39 +179,36 @@ contract ETHContinuousToken is Ownable, ContinuousToken {
     }
 
     // treasury
-    struct Dividen {
-        uint amount;
-        uint timestamp;
-        bool claimed;
-    }
+    // struct Dividen {
+    //     uint amount;
+    //     uint timestamp;
+    //     bool claimed;
+    // }
 
-    mapping(address => Dividen) dividens;
+    // mapping(address => Dividen) dividens;
 
-    function contribute() public payable {
-        require(msg.value > 0);
-        treasury += msg.value;
-    }
+    
 
-    function dividen() public view returns (uint256) {
-        return treasury * balanceOf(msg.sender) / totalSupply();
-    }
+    // function dividen() public view returns (uint256) {
+    //     return treasury * balanceOf(msg.sender) / totalSupply() - scale;
+    // }
 
-    function claim(uint256 _amount) public payable {
-        require(balanceOf(msg.sender) > 0, "you need to own this coin to earn dividens");
-        uint amount = treasury * balanceOf(msg.sender) / totalSupply();
-        require(_amount <= amount, "amount is too large");
-        if (_amount < amount) {
-            payable(msg.sender).transfer(_amount);
-        } else {
-            payable(msg.sender).transfer(amount);
-        }
+    // function claim(uint256 _amount) public payable {
+    //     require(balanceOf(msg.sender) > 0, "you need to own this coin to earn dividens");
+    //     uint amount = treasury * balanceOf(msg.sender) / totalSupply();
+    //     require(_amount <= amount, "amount is too large");
+    //     if (_amount < amount) {
+    //         payable(msg.sender).transfer(_amount);
+    //     } else {
+    //         payable(msg.sender).transfer(amount);
+    //     }
 
-        // Dividen memory newDividen = Dividen({
-        //     amount: amount,
-        //     timestamp: block.timestamp,
-        //     claimed: true
-        // });
+    //     // Dividen memory newDividen = Dividen({
+    //     //     amount: amount,
+    //     //     timestamp: block.timestamp,
+    //     //     claimed: true
+    //     // });
 
-        // dividens[msg.sender] = newDividen;
-    }
+    //     // dividens[msg.sender] = newDividen;
+    // }
 }

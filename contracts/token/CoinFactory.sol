@@ -2,8 +2,11 @@
 pragma solidity ^0.8.0;
 
 import "./ETHContinuousToken.sol";
-import "./ERC20ContinuousToken.sol";
-import "hardhat/console.sol";
+
+// import "./ETHContinuousToken.sol";
+
+// import "./ERC20ContinuousToken.sol";
+// import "hardhat/console.sol";
 
 contract CoinFactory {
     address[] public deployedCoins;

@@ -39,9 +39,9 @@ class NewProposal extends Component {
   render() {
     return (
       <Layout>
-        <Link route={`/coins/${this.props.address}/proposals`}>
+        {/* <Link route={`/coins/${this.props.address}/proposals`}>
           <a>Back</a>
-        </Link>
+        </Link> */}
         <h3>Create Proposal</h3>
         <Form onSubmit={this.onSubmit} error={!!this.state.errorMessage}>
           <Form.Field>

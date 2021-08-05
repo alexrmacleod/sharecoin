@@ -31,8 +31,10 @@ import DividenForm from "../../components/DividenForm";
 
 class CoinShow extends Component {
   state = {
+    released: 0,
     dividen: 0,
     activeItem: "Buy",
+    detailActiveItem: "Details",
     dividenActiveItem: "inactive",
     withdrawActiveItem: "inactive",
     beneficiaryActiveItem: "inactive",
@@ -42,6 +44,11 @@ class CoinShow extends Component {
 
   handleItemClick = async (e, { name }) => {
     this.setState({ activeItem: name });
+    this.renderForm(name);
+  };
+
+  handleDetailItemClick = async (e, { name }) => {
+    this.setState({ detailActiveItem: name });
     this.renderForm(name);
   };
 
@@ -88,9 +95,45 @@ class CoinShow extends Component {
     const supply = await coin.methods.continuousSupply().call();
     // get proposal count
     const proposalCount = await coin.methods.getProposalsCount().call();
+    // get holders
+    const holders = await coin.methods.getHolders().call();
+    // get payees
+    const payees = await coin.methods.getPayees().call();
+    // get totalReased
+    const totalReleased = await coin.methods.totalReleased().call();
+    console.log("totalReleased", totalReleased);
+    console.log("holders", holders);
+    console.log("payees", payees);
+    // get holder balances
+    const details = await payees.map(async (address) => {
+      // balance
+      const balance = await coin.methods.balanceOf(address).call();
+      console.log("balance1", balance);
+      // shares
+      const shares = await coin.methods.shares(address).call();
+      console.log("shares2", shares);
+      // price
+      const price = await coin.methods.getContinuousBurnRefund(balance).call();
+      // dividen
+      const dividen = await coin.methods.getDividen(address).call();
+      // const dividen = "0";
+      console.log("dividen", dividen);
+      return {
+        address: address,
+        balance: web3.utils.fromWei(balance, "ether"),
+        price: web3.utils.fromWei(price, "ether"),
+        dividen: web3.utils.fromWei(dividen, "ether"),
+      };
+    });
+    // holder promises
+    // const balances = await Promise.all(details.balance);
+    const promises = await Promise.all(details);
+    // console.log(holderPromises);
     // get dividen
-    const dividen = await coin.methods.dividen().call();
+    // const dividen = await coin.methods.getDividen().call();
 
+    // const dividen = await web3.eth.getBalance(props.query.address);
+    // console.log("dividen", dividen);
     // // const start =
     // //   reserve ** (price / supply / ((500000 / 1000000) * 100) - 1) - 1;
     // // const rtr = start - 1;
@@ -153,21 +196,151 @@ class CoinShow extends Component {
       beneficiaryRewardRatio: summary[4],
       beneficiary: summary[5],
       beneficiaryRewards: web3.utils.fromWei(summary[6], "ether"),
-      treasury: web3.utils.fromWei(summary[7], "ether"),
+      contribution: web3.utils.fromWei(summary[7], "ether"),
       ipfsHash: summary[8],
-      holders: summary[9],
+      holderCount: summary[9],
       proposalCount: proposalCount,
+      holders: holders,
+      promises: promises,
+      payees: payees,
+      totalReleased: web3.utils.fromWei(totalReleased, "ether"),
+      componentDidUpdate: false,
+      // dividen: web3.utils.fromWei(dividen, "ether"),
     };
+  }
+
+  updateDividen = async () => {
+    const { connected, account } = this.context;
+    if (!connected) {
+      const coin = await Coin(this.props.address);
+      const accounts = await web3.eth.getAccounts();
+      console.log("accounts", accounts[0]);
+      const shares = await coin.methods.shares(accounts[0]).call();
+      console.log("shares", shares);
+      const dividen = await coin.methods.getDividen(accounts[0]).call();
+      console.log("dividen.state", dividen);
+      this.setState({ dividen: web3.utils.fromWei(dividen, "ether") });
+    }
+  };
+
+  async componentDidUpdate(prevProps) {
+    //only run this when contribution is made
+    if (this.props.contribution !== prevProps.contribution) {
+      this.updateDividen();
+    }
   }
 
   // client side web3 user data fetch
   async componentDidMount() {
-    // get coin instance
-    const coin = await Coin(this.props.address);
-    // get dividen
-    const accounts = await web3.eth.getAccounts();
-    const dividen = await coin.methods.dividen().call({ from: accounts[0] });
-    this.setState({ dividen: web3.utils.fromWei(dividen, "ether") });
+    this.updateDividen();
+  }
+
+  renderHolders() {
+    const { holders, payees, promises, symbol } = this.props;
+    const items = holders.map((address, index) => {
+      return (
+        <Card fluid={true} key={index}>
+          <Card.Content>
+            <Card.Header>
+              <a href={"https://etherscan.io/address/" + holders[index]}>
+                {holders[index]}
+              </a>
+            </Card.Header>
+            <Card.Meta>
+              {Math.round(promises[index].balance * 100) / 100 +
+                ` ` +
+                symbol +
+                ` ~ ` +
+                Math.round(promises[index].price * 100) / 100 +
+                ` ETH`}
+            </Card.Meta>
+          </Card.Content>
+        </Card>
+      );
+    });
+    return <Card.Group stackable={true}>{items}</Card.Group>;
+  }
+
+  renderDividens() {
+    const { payees, promises, symbol } = this.props;
+    // const { dividenPromises } = this.state;
+
+    const items = payees.map((address, index) => {
+      return (
+        <Card fluid={true} key={index}>
+          <Card.Content>
+            <Card.Header>
+              <a href={"https://etherscan.io/address/" + payees[index]}>
+                {payees[index]}
+              </a>
+            </Card.Header>
+            <Card.Meta>
+              {Math.round(promises[index].balance * 100) / 100 +
+                ` ` +
+                symbol +
+                ` ~ ` +
+                Math.round(promises[index].dividen * 100) / 100 +
+                ` ETH`}
+            </Card.Meta>
+          </Card.Content>
+        </Card>
+      );
+    });
+    return <Card.Group stackable={true}>{items}</Card.Group>;
+  }
+
+  renderDividenCards() {
+    const { connected } = this.context;
+    const { totalReleased } = this.props;
+    const { dividen, released } = this.state;
+
+    const items = [
+      {
+        header: dividen + " ETH",
+        meta: "Dividens",
+        description: "Your share of the contributed ether.",
+        stackable: "true",
+        extra:
+          !connected || dividen === 0
+            ? null
+            : this.renderDividenForm(this.state.dividenActiveItem),
+      },
+      {
+        header: Math.round(totalReleased * 100) / 100 + " ETH",
+        meta: "Total released",
+        description: "The total amount of ether already released.",
+        stackable: "true",
+      },
+    ];
+    return <Card.Group itemsPerRow={2} items={items} />;
+  }
+
+  renderDetail(name) {
+    const { connected, account } = this.context;
+    switch (name) {
+      case "Details": {
+        return <Grid.Column>{this.renderCards()}</Grid.Column>;
+        break;
+      }
+      case "Holders": {
+        return <Grid.Column>{this.renderHolders()}</Grid.Column>;
+        break;
+      }
+      case "Dividens": {
+        return (
+          <Grid.Column>
+            {this.renderDividenCards()}
+            {this.renderDividens()}
+          </Grid.Column>
+        );
+        break;
+      }
+      default: {
+        console.log("default");
+        break;
+      }
+    }
+    return;
   }
 
   renderForm(name) {
@@ -192,6 +365,7 @@ class CoinShow extends Component {
             color="red"
             activeItem={name}
             symbol={this.props.symbol}
+            holders={this.props.holders}
           />
         );
         break;
@@ -214,6 +388,35 @@ class CoinShow extends Component {
     }
     return;
   }
+
+  // renderDividenButton(status) {
+  //   switch (status) {
+  //     case "inactive": {
+  //       return (
+  //         <a onClick={() => this.setState({ descriptionActiveItem: "active" })}>
+  //           <Icon name="edit" />
+  //           Edit
+  //         </a>
+  //       );
+  //       break;
+  //     }
+  //     case "active": {
+  //       return (
+  //         <DescriptionForm
+  //           address={this.props.address}
+  //           description={this.props.description}
+  //           onClick={(value) => this.setState({ descriptionActiveItem: value })}
+  //         />
+  //       );
+  //       break;
+  //     }
+  //     default: {
+  //       console.log("default");
+  //       break;
+  //     }
+  //   }
+  //   return;
+  // }
 
   renderDescriptionForm(status) {
     switch (status) {
@@ -258,8 +461,11 @@ class CoinShow extends Component {
         return (
           <DividenForm
             address={this.props.address}
-            dividen={this.state.dividen}
-            onClick={(value) => this.setState({ dividenActiveItem: value })}
+            onClick={(value) => {
+              this.setState({ dividenActiveItem: value });
+              // after release set dividen to 0
+              this.setState({ dividen: 0 });
+            }}
           />
         );
       }
@@ -329,23 +535,16 @@ class CoinShow extends Component {
   renderCards() {
     const { connected, account } = this.context;
     const {
+      symbol,
       address,
       supply,
       reserve,
       beneficiaryRewardRatio,
       beneficiary,
       beneficiaryRewards,
-      holders,
+      holderCount,
       proposalCount,
     } = this.props;
-
-    // const withdrawForm = (
-    //   <WithdrawForm
-    //     address={address}
-    //     beneficiary={beneficiary}
-    //     beneficiaryRewards={beneficiaryRewards}
-    //   />
-    // );
 
     const viewProposal = (
       <Link route={`/coins/${address}/proposals`}>
@@ -359,8 +558,8 @@ class CoinShow extends Component {
 
     const items = [
       {
-        header: holders,
-        meta: holders > 1 || holders < 1 ? "Holders" : "Holder",
+        header: holderCount,
+        meta: holderCount > 1 || holderCount < 1 ? "Holders" : "Holder",
         description: "The number of accounts that hold this coin.",
         stackable: "true",
       },
@@ -394,18 +593,8 @@ class CoinShow extends Component {
             : this.renderWithdrawForm(this.state.withdrawActiveItem),
       },
       {
-        header: this.state.dividen + " ETH",
-        meta: "Dividens",
-        description: "Your share of the contributed funds in the treasury.",
-        style: { overflowWrap: "break-word" },
-        extra:
-          !connected || this.state.dividen === null || this.state.dividen <= 0
-            ? null
-            : this.renderDividenForm(this.state.dividenActiveItem),
-      },
-      {
         header: beneficiary,
-        meta: "Address of Beneficiary",
+        meta: "Beneficiary Address",
         description:
           "The proceeds from the beneficiary reward ratio can be withdrawn wtih this address",
         style: { overflowWrap: "break-word" },
@@ -420,13 +609,13 @@ class CoinShow extends Component {
         stackable: "true",
       },
       {
-        header: reserve,
+        header: reserve + " ETH",
         meta: "Reserve",
         description: "The reserve in this coin",
         stackable: "true",
       },
       {
-        header: supply,
+        header: supply + " " + symbol,
         meta: "Supply",
         description: "The supply of this coin",
         stackable: "true",
@@ -438,7 +627,7 @@ class CoinShow extends Component {
   render() {
     const { account, connected } = this.context;
     const {
-      treasury,
+      contribution,
       reserve,
       symbol,
       name,
@@ -450,30 +639,14 @@ class CoinShow extends Component {
       beneficiary,
       beneficiaryRewards,
     } = this.props;
-    const { activeItem } = this.state;
-    const contributeForm = <ContributeForm address={address} />;
-    const withdrawForm = (
-      <WithdrawForm
+    const { activeItem, detailActiveItem } = this.state;
+    const contributeForm = (
+      <ContributeForm
+        holders={this.props.holders}
+        balances={this.props.balances}
         address={address}
-        beneficiary={beneficiary}
-        beneficiaryRewards={beneficiaryRewards}
       />
     );
-
-    // const proposalButton = (
-    //   <Link route={`/coins/${this.props.address}/proposals`}>
-    //     <a>
-    //       <Button content="View Proposals" floated="right" primary />
-    //     </a>
-    //   </Link>
-    // );
-
-    // const editDescription = (
-    //   <a onClick={() => this.setState({ descriptionActiveItem: "active" })}>
-    //     <Icon name="edit" />
-    //     Edit
-    //   </a>
-    // );
 
     return (
       <Layout>
@@ -487,7 +660,6 @@ class CoinShow extends Component {
                 size="small"
                 src={`https://ipfs.io/ipfs/${ipfsHash}`}
               />
-              {/* <Card size="small" image={`https://ipfs.io/ipfs/${ipfsHash}`} /> */}
               <Card fluid={true}>
                 <Card.Content>
                   <Card.Header>{symbol}</Card.Header>
@@ -507,13 +679,32 @@ class CoinShow extends Component {
                   </Card.Content>
                 )}
               </Card>
-              <Divider horizontal>
+              {/* <Divider horizontal>
                 <Header as="h4">
                   <Icon name="info" />
                   Coin details
                 </Header>
-              </Divider>
-              <Grid.Column>{this.renderCards()}</Grid.Column>
+              </Divider> */}
+
+              <Menu secondary>
+                <Menu.Item
+                  name="Details"
+                  active={detailActiveItem === "Details"}
+                  onClick={this.handleDetailItemClick}
+                />
+                <Menu.Item
+                  name="Holders"
+                  active={detailActiveItem === "Holders"}
+                  onClick={this.handleDetailItemClick}
+                />
+                <Menu.Item
+                  name="Dividens"
+                  active={detailActiveItem === "Dividens"}
+                  onClick={this.handleDetailItemClick}
+                />
+              </Menu>
+              {this.renderDetail(this.state.detailActiveItem)}
+              {/* <Grid.Column>{this.renderCards()}</Grid.Column> */}
             </Grid.Column>
 
             <Grid.Column width={6}>
@@ -555,9 +746,9 @@ class CoinShow extends Component {
                 style={{ overflowWrap: "break-word" }}
               /> */}
               <Card
-                header={treasury + " ETH"}
-                meta="Treasury"
-                description="Contribute funds to all coin holders"
+                header={Math.round(contribution * 100) / 100 + " ETH"}
+                meta="Contribution"
+                description="Contribute ether to coin holders proportional to the percentage of total coins they own."
                 fluid={true}
                 extra={contributeForm}
                 style={{ overflowWrap: "break-word" }}

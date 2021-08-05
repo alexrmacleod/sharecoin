@@ -13,6 +13,7 @@ const helper = {
   gas: "10000000",
   minReceived: 1,
   mint: "1",
+  ipfsHash: "Qme7ss3ARVgxv6rXqVPiikMJ8u2NLgmgszg13pYrDKEoiu",
 };
 
 module.exports = helper;

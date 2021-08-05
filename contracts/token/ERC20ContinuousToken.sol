@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./ContinuousToken.sol";
-import "hardhat/console.sol";
+// import "hardhat/console.sol";
 
 // Need additional attributes for creator / caretaker address and fees
 // creatorAddress
@@ -26,10 +26,10 @@ contract ERC20ContinuousToken is Ownable, ContinuousToken {
     uint256 public beneficiaryRewards;
     uint256 public beneficiaryReward;
     string public ipfsHash;
-    address public treasury;
-    uint256 public dividen;
+    // address public treasury;
+    // uint256 public dividen;
     uint256 constant public scale = 10**18;
-    uint public holders;
+    // uint public holders;
 
     constructor(
         string memory _name,
@@ -51,9 +51,7 @@ contract ERC20ContinuousToken is Ownable, ContinuousToken {
             _reserveRatio
         )
     {
-        console.log("here3");
         reserveToken = _reserveToken;
-        console.log("here4");
         coinName = _name;
         coinSymbol = _symbol;
         // reserve = 10**18;// _value; // this used to be msg.value is it ok to start a bonding curve with fake ether?
@@ -70,9 +68,9 @@ contract ERC20ContinuousToken is Ownable, ContinuousToken {
 
     function mint(uint256 _amount) public payable {
         // count holders
-        if(balanceOf(msg.sender) <= 0) {
-            holders += 1;
-        }
+        // if(balanceOf(msg.sender) <= 0) {
+        //     holders += 1;
+        // }
 
         // beneficiary cut
         // beneficiaryReward = msg.value * beneficiaryRewardRatio / 1000000;
@@ -88,11 +86,11 @@ contract ERC20ContinuousToken is Ownable, ContinuousToken {
 
     function burn(uint256 _amount) public payable {
         // decrement holders
-        if(balanceOf(msg.sender) <= 0) {
-            holders -= 1;
-        }
+        // if(balanceOf(msg.sender) <= 0) {
+        //     holders -= 1;
+        // }
         
-        uint256 returnAmount = _continuousBurn(_amount);
+        uint256 returnAmount = _continuousBurn(_amount,0);
         require(
             reserveToken.transfer(msg.sender, returnAmount),
             "burn() ERC20.transfer failed."
@@ -103,35 +101,35 @@ contract ERC20ContinuousToken is Ownable, ContinuousToken {
         return reserveToken.balanceOf(address(this));
     }
 
-    function getSummary()
-        public
-        view
-        returns (
-            string memory,
-            string memory,
-            uint,
-            string memory,
-            uint32,
-            address,
-            uint256,
-            uint256,
-            string memory,
-            uint
-        )
-    {
-        return (
-            coinName,
-            coinSymbol,
-            address(this).balance,
-            description,
-            beneficiaryRewardRatio,
-            beneficiary,
-            beneficiaryRewards,
-            dividen,
-            ipfsHash,
-            holders
-        );
-    }
+    // function getSummary()
+    //     public
+    //     view
+    //     returns (
+    //         string memory,
+    //         string memory,
+    //         uint,
+    //         string memory,
+    //         uint32,
+    //         address,
+    //         uint256,
+    //         uint256,
+    //         string memory,
+    //         uint
+    //     )
+    // {
+    //     return (
+    //         coinName,
+    //         coinSymbol,
+    //         address(this).balance,
+    //         description,
+    //         beneficiaryRewardRatio,
+    //         beneficiary,
+    //         beneficiaryRewards,
+    //         dividen,
+    //         ipfsHash,
+    //         holders
+    //     );
+    // }
 
     // only beneficiary can withdraw
     function withdraw(uint256 _amount) public payable onlyOwner {
@@ -143,60 +141,60 @@ contract ERC20ContinuousToken is Ownable, ContinuousToken {
 
     // Proposal functions
 
-    struct Proposal {
-        string description;
-        uint value;
-        address recipient;
-        bool complete;
-        uint timestamp;
-    }
-
-    Proposal[] public proposals;
-
-    // address public manager;
-    // uint public minimumContribution;
-    // mapping(address => bool) public approvers;
-    // uint public approversCount;
-
-    // modifier restricted() {
-    //     require(msg.sender == manager);
-    //     _;
+    // struct Proposal {
+    //     string description;
+    //     uint value;
+    //     address recipient;
+    //     bool complete;
+    //     uint timestamp;
     // }
 
-    function createProposal(string memory _description, uint _value) public {
-        Proposal memory newProposal = Proposal({
-           description: _description,
-           value: _value,
-           recipient: msg.sender,
-           complete: false,
-           timestamp: block.timestamp
-        });
-        proposals.push(newProposal);
-    }
+    // Proposal[] public proposals;
 
-    function approveProposal(uint _index) public payable onlyOwner {
-        Proposal storage proposal = proposals[_index];
-        require(!proposal.complete);
-        payable(proposal.recipient).transfer(proposal.value);
-        proposal.complete = true;
-    }
+    // // address public manager;
+    // // uint public minimumContribution;
+    // // mapping(address => bool) public approvers;
+    // // uint public approversCount;
 
-    function getProposalsCount() public view returns (uint) {
-        return proposals.length;
-    }
+    // // modifier restricted() {
+    // //     require(msg.sender == manager);
+    // //     _;
+    // // }
 
-    // treasury
-    struct Dividen {
-        uint amount;
-        uint count;
-        bool used;
-    }
-    uint dividenCount;
-    mapping(address => Dividen) dividens;
+    // function createProposal(string memory _description, uint _value) public {
+    //     Proposal memory newProposal = Proposal({
+    //        description: _description,
+    //        value: _value,
+    //        recipient: msg.sender,
+    //        complete: false,
+    //        timestamp: block.timestamp
+    //     });
+    //     proposals.push(newProposal);
+    // }
 
-    function contribute() public payable {
-        require(msg.value > 0);
-        dividen += msg.value;
-        dividenCount++;
-    }
+    // function approveProposal(uint _index) public payable onlyOwner {
+    //     Proposal storage proposal = proposals[_index];
+    //     require(!proposal.complete);
+    //     payable(proposal.recipient).transfer(proposal.value);
+    //     proposal.complete = true;
+    // }
+
+    // function getProposalsCount() public view returns (uint) {
+    //     return proposals.length;
+    // }
+
+    // // treasury
+    // struct Dividen {
+    //     uint amount;
+    //     uint count;
+    //     bool used;
+    // }
+    // uint dividenCount;
+    // mapping(address => Dividen) dividens;
+
+    // function contribute() public payable {
+    //     require(msg.value > 0);
+    //     dividen += msg.value;
+    //     dividenCount++;
+    // }
 }

@@ -6,6 +6,8 @@
 // const hre = require("hardhat");
 const ethContinuousToken = require("../artifacts/contracts/token/ETHContinuousToken.sol/ETHContinuousToken.json");
 const coinFactory = require("../artifacts/contracts/token/CoinFactory.sol/CoinFactory.json");
+// const paymentSplitter = require("../artifacts/@openzeppelin/contracts/finance/PaymentSplitter.sol/PaymentSplitter.json");
+
 const helper = require("./helper");
 
 async function main() {
@@ -74,7 +76,8 @@ async function main() {
       // helper.decimals,
       accounts[0],
       helper.initialSupply,
-      helper.reserveRatio
+      helper.reserveRatio,
+      helper.ipfsHash
     )
     .send({
       gas: helper.gas,
@@ -106,42 +109,135 @@ async function main() {
   const methods = await contract.methods;
   console.log(methods);
 
-  await balance();
-  await mint(accounts[1]);
-  await mint(accounts[2]);
-  await contribute();
-  await contribute();
-  // await getAccountDividen(accounts[0]);
-  // await getAccountDividen(accounts[1]);
-  await claim(accounts[1]);
-  await claim(accounts[2]);
-  await contribute();
-  await contribute();
-  await claim(accounts[1]);
-  await claim(accounts[2]);
-  await claim(accounts[1]);
-  await claim(accounts[2]);
-  await claim(accounts[1]);
-  await claim(accounts[2]);
-  await balance();
-  // await getAccountDividen(accounts[0]);
-  // await getAccountDividen(accounts[1]);
+  // await balance();
+  // await mint(accounts[1]);
+  // await mint(accounts[2]);
+  // await contribute();
+  // await contribute();
+  // // await getAccountDividen(accounts[0]);
+  // // await getAccountDividen(accounts[1]);
+  // await claim(accounts[1]);
+  // await claim(accounts[2]);
+  // await contribute();
+  // await contribute();
+  // await claim(accounts[1]);
+  // await claim(accounts[2]);
+  // await claim(accounts[1]);
+  // await claim(accounts[2]);
+  // await claim(accounts[1]);
+  // await claim(accounts[2]);
+  // await balance();
+  // // await getAccountDividen(accounts[0]);
+  // // await getAccountDividen(accounts[1]);
 
   // await balance();
   // await price();
   // await contractState();
-  // await mint();
+  // await mint(accounts[1]);
   // await beneficiaryRewards();
   // await price();
   // await contractState();
-  // await mint();
+  // await mint(accounts[1]);
   // await beneficiaryRewards();
   // await price();
   // await contractState();
-  // await mint();
+  // await mint(accounts[1]);
   // await beneficiaryRewards();
   // await balance();
   // await withdraw();
+  // await balance();
+
+  await balance();
+  await contribute();
+  await mint(accounts[1]);
+  await mint(accounts[2]);
+  await contribute();
+  await mint(accounts[1]);
+  await mint(accounts[1]);
+  await mint(accounts[1]);
+  await getDividen(accounts[1]);
+  await getDividen(accounts[2]);
+  await mint(accounts[1]);
+  await mint(accounts[1]);
+  await mint(accounts[1]);
+  await release(accounts[1]);
+  await release(accounts[2]);
+  await contribute();
+  await getDividen(accounts[1]);
+  await getDividen(accounts[2]);
+  await mint(accounts[1]);
+  await mint(accounts[2]);
+  await release(accounts[1]);
+  await release(accounts[2]);
+  await burn(accounts[1]);
+  await burn(accounts[2]);
+  await getDividen(accounts[1]);
+  await getDividen(accounts[2]);
+
+  // await contribute();
+  // await burn(accounts[1]);
+  // await release(accounts[3]);
+  // await release(accounts[4]);
+  // // await release(accounts[1]);
+  // await release(accounts[2]);
+  // // await mint(accounts[6]);
+  // // await release(accounts[6]);
+  // // await release(accounts[4]);
+  // await balance();
+  // // await release(accounts[1]);
+  // // await release(accounts[2]);
+  // // await release(accounts[3]);
+  // // await release(accounts[4]);
+  await balance();
+  // // console.log("holders", holders);
+
+  // console.log("--------SPLITTER--------");
+  // const holders = await contract.methods.getHolders().call();
+  // const details = await holders.map(async (address) => {
+  //   // balance
+  //   const balance = await contract.methods.balanceOf(address).call();
+  //   return balance;
+  // });
+  // const balances = await Promise.all(details);
+
+  // // console.log("splitter", splitter);
+  // console.log("holders", holders);
+  // console.log("balances", balances);
+
+  // const splitterAddress = await contract.methods.splitterAddress().call();
+  // contract.log("splitterAddress", splitterAddress);
+  // // const splitterInstance = await new web3.eth.Contract(paymentSplitter.abi)
+  // //   .deploy({
+  // //     data: paymentSplitter.bytecode,
+  // //     // arguments: [holders, balances],
+  // //   })
+  // //   .send({
+  // //     gas: helper.gas,
+  // //     from: accounts[0],
+  // //     value: web3.utils.toWei("100", "ether"), // set reserve in ETHContinuousToken
+  // //   });
+  // const splitterInstance = await new web3.eth.Contract(
+  //   paymentSplitter.abi,
+  //   splitterAddress
+  // ).send({
+  //   gas: helper.gas,
+  //   from: accounts[0],
+  //   value: web3.utils.toWei("100", "ether"), // set reserve in ETHContinuousToken
+  // });
+
+  // // console.log("splitter deployed:", splitterInstance.options.address);
+  // // console.log(splitterInstance);
+
+  // await splitterInstance.methods.release(accounts[1]).send({
+  //   gas: helper.gas,
+  //   from: accounts[1],
+  // });
+
+  // await splitterInstance.methods.release(accounts[2]).send({
+  //   gas: helper.gas,
+  //   from: accounts[2],
+  // });
+
   // await balance();
 
   async function beneficiaryRewards() {
@@ -154,27 +250,36 @@ async function main() {
       );
   }
 
-  async function withdraw() {
-    console.log("--------WITHDRAW--------");
-    await contract.methods
-      .owner()
-      .call()
-      .then((value) => console.log("owner", value));
-    await contract.methods.withdraw(web3.utils.toWei("300", "ether")).send({
-      gas: helper.gas,
-      from: accounts[0],
-      // value: web3.utils.toWei("0.01", "ether"),
-    });
-  }
+  // async function withdraw() {
+  //   console.log("--------WITHDRAW--------");
+  //   await contract.methods
+  //     .owner()
+  //     .call()
+  //     .then((value) => console.log("owner", value));
+  //   await contract.methods.withdraw(web3.utils.toWei("300", "ether")).send({
+  //     gas: helper.gas,
+  //     from: accounts[0],
+  //     // value: web3.utils.toWei("0.01", "ether"),
+  //   });
+  // }
 
   async function balance() {
     console.log("--------BALACE--------");
     balance1 = await web3.eth.getBalance(accounts[1]);
     balance2 = await web3.eth.getBalance(accounts[2]);
+    balance3 = await web3.eth.getBalance(accounts[3]);
+    balance4 = await web3.eth.getBalance(accounts[4]);
+    balance6 = await web3.eth.getBalance(accounts[6]);
     console.log("account1:", accounts[1]);
     console.log("balance1:", web3.utils.fromWei(balance1, "ether"));
     console.log("account2:", accounts[2]);
     console.log("balance2:", web3.utils.fromWei(balance2, "ether"));
+    console.log("account3:", accounts[3]);
+    console.log("balance3:", web3.utils.fromWei(balance3, "ether"));
+    console.log("account4:", accounts[4]);
+    console.log("balance4:", web3.utils.fromWei(balance4, "ether"));
+    console.log("account6:", accounts[6]);
+    console.log("balance6:", web3.utils.fromWei(balance6, "ether"));
   }
 
   async function price() {
@@ -250,6 +355,25 @@ async function main() {
       from: account,
       value: web3.utils.toWei(helper.mint, "ether"),
     });
+    const balance = await contract.methods.balanceOf(account).call();
+    console.log("balance", balance);
+  }
+
+  async function burn(account) {
+    const balance = await contract.methods.balanceOf(account).call();
+    const holders = await contract.methods.getHolders().call();
+    console.log("holders", holders);
+    console.log("balance", balance);
+    console.log("holders.indexOf(account)", holders.indexOf(account));
+    const divBalance = balance / 2;
+    // mint
+    console.log("--------BURN--------");
+    await contract.methods.burn(divBalance, holders.indexOf(account)).send({
+      gas: helper.gas,
+      from: account,
+    });
+    const contribution = await contract.methods.contribution().call();
+    console.log("contribution", contribution);
   }
 
   // async function disburse() {
@@ -266,18 +390,29 @@ async function main() {
     console.log("--------CONTRIBUTE--------");
     await contract.methods.contribute().send({
       gas: helper.gas,
-      from: accounts[3],
-      value: web3.utils.toWei("100", "ether"),
+      from: accounts[5],
+      value: web3.utils.toWei("818", "ether"),
     });
   }
 
-  async function claim(account) {
-    // mint
-    console.log("--------CLAIM--------");
-    await contract.methods.claim().send({
+  async function release(account) {
+    // release
+    console.log("--------RELEASE--------");
+    await contract.methods.release(account).send({
       gas: helper.gas,
       from: account,
     });
+    const contribution = await contract.methods.contribution().call();
+    console.log("contribution", contribution);
+    console.log("account", account);
+  }
+
+  async function getDividen(account) {
+    // getDividen
+    console.log("--------DIVIDEN--------");
+    const dividen = await contract.methods.getDividen(account).call();
+    console.log("dividen ", dividen);
+    console.log("account", account);
   }
 
   // async function getAccountDividen(account) {

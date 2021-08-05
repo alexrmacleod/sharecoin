@@ -19,7 +19,7 @@ class ContributeForm extends Component {
     const accounts = await web3.eth.getAccounts();
     const balance = await web3.eth.getBalance(accounts[0]);
     this.setState({
-      value: balance,
+      value: web3.utils.fromWei(balance, "ether"),
     });
   };
 
